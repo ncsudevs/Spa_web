@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: Inter, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: Inter, system-ui, sans-serif;
+  background: #f8f5f1;
+  color: #1c1917;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.field {
+  width: 100%;
+  border-radius: 1.25rem;
+  border: 1px solid #e7e5e4;
+  background: #fafaf9;
+  padding: 0.95rem 1rem;
+  color: #1c1917;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.field:focus {
+  border-color: #fda4af;
+  box-shadow: 0 0 0 4px rgba(244, 114, 182, 0.12);
+}
