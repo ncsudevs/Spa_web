@@ -52,6 +52,13 @@ export default function MyBookingsPage() {
   const bookingCode = location.state?.bookingCode;
   const paymentCode = location.state?.paymentCode;
 
+  function parseUtcDate(value) {
+    if (!value) return null;
+    const str = String(value);
+    const hasTz = /[zZ]|[+-]\d{2}:?\d{2}$/.test(str);
+    return new Date(hasTz ? str : `${str}Z`);
+  }
+
   useEffect(() => {
     loadBookings();
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -251,6 +258,8 @@ export default function MyBookingsPage() {
               const isPaid = booking.paymentStatus === "PAID";
               const isRejected = booking.paymentStatus === "REJECTED";
               const isCancelled = booking.status === "CANCELLED";
+              const paymentAttempts = booking.paymentAttempts ?? 0;
+              const canRetryPending = paymentAttempts < 3;
 
               const appointmentDate = booking.appointmentDate
                 ? new Date(booking.appointmentDate)
@@ -259,14 +268,15 @@ export default function MyBookingsPage() {
                 appointmentDate &&
                 appointmentDate < new Date(new Date(now).toDateString());
 
-              const paymentAttempts = booking.paymentAttempts ?? 1;
-              const lastPaymentCreated =
-                booking.lastPaymentCreatedAt ||
-                booking.updatedAt ||
-                booking.createdAt;
+              const lastPaymentCreated = booking.lastPaymentCreatedAt
+                ? parseUtcDate(booking.lastPaymentCreatedAt)
+                : booking.updatedAt
+                  ? parseUtcDate(booking.updatedAt)
+                  : parseUtcDate(booking.createdAt);
               const expiresAt =
                 lastPaymentCreated != null
-                  ? new Date(lastPaymentCreated).getTime() + 5 * 60 * 1000
+                  ? // ? lastPaymentCreated.getTime() + 10 * 1000
+                    lastPaymentCreated.getTime() + 1 * 60 * 1000
                   : null;
               const secondsLeft =
                 expiresAt && expiresAt > now
@@ -413,30 +423,51 @@ export default function MyBookingsPage() {
                         </div>
                       ) : isPending ? (
                         <div className="mt-4 space-y-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                          <p>
-                            Payment request submitted. For MoMo, complete the
-                            payment on the hosted page and wait for the IPN
-                            update. Session valid within ~5 minutes; if expired,
-                            creating again will issue a new QR.
+                          <p className="text-xs text-amber-700">
+                            Attempts used: {paymentAttempts}/3.
                           </p>
-                          <p className="text-xs font-semibold tracking-wide text-amber-700">
-                            {countdown
-                              ? `Session auto-expires in ${countdown}.`
-                              : isTtlExpired
-                                ? "Session expired; create a new payment to get a fresh QR."
-                                : "Unable to determine remaining time; recreate if the hosted page fails."}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => handleCreatePayment(booking)}
-                            disabled={submittingPayment}
-                            className="inline-flex items-center gap-2 rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:opacity-60"
-                          >
-                            {submittingPayment &&
-                            selectedBookingId === booking.id
-                              ? "Recreating session..."
-                              : "Resume MoMo payment"}
-                          </button>
+
+                          {isTtlExpired ? (
+                            <div className="rounded-2xl bg-white p-4 text-amber-800 shadow-sm ring-1 ring-amber-200">
+                              <p className="text-sm font-semibold">
+                                Payment session expired
+                              </p>
+                              <p className="mt-1 text-xs text-amber-700">
+                                The MoMo QR/session is only valid for 5 minutes.
+                                Create a new payment to get a fresh QR.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => handleCreatePayment(booking)}
+                                disabled={submittingPayment || !canRetryPending}
+                                className="mt-3 inline-flex items-center gap-2 rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:opacity-60"
+                              >
+                                {submittingPayment &&
+                                selectedBookingId === booking.id
+                                  ? "Creating new session..."
+                                  : "Create new payment"}
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-xs font-semibold tracking-wide text-amber-700">
+                                {countdown
+                                  ? `MoMo session expires in ${countdown}.`
+                                  : "Session time remaining unknown. If payment fails, create a new one."}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => handleCreatePayment(booking)}
+                                disabled={submittingPayment || !canRetryPending}
+                                className="inline-flex items-center gap-2 rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:opacity-60"
+                              >
+                                {submittingPayment &&
+                                selectedBookingId === booking.id
+                                  ? "Recreating session..."
+                                  : "Resume MoMo payment"}
+                              </button>
+                            </>
+                          )}
                         </div>
                       ) : isRejected ? (
                         <div className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">

@@ -1,5 +1,28 @@
-function pad(value) {
-  return String(value).padStart(2, "0");
+const TZ = "Asia/Bangkok";
+
+const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
+  timeZone: TZ,
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
+const dateTimeFormatter = new Intl.DateTimeFormat("vi-VN", {
+  timeZone: TZ,
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+function toDate(value) {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
 }
 
 export function formatDate(value) {
@@ -10,19 +33,19 @@ export function formatDate(value) {
     return `${day}/${month}/${year}`;
   }
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+  const date = toDate(value);
+  if (!date) return value;
+  return dateFormatter.format(date);
 }
 
 export function formatDateTime(value) {
   if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  const date = toDate(value);
+  if (!date) return value;
+  return dateTimeFormatter.format(date);
 }
 
 export function formatCurrency(value) {
   const amount = Number(value || 0);
-  return `${amount.toLocaleString("vi-VN", { maximumFractionDigits: 0 })} đ`;
+  return `${amount.toLocaleString("vi-VN", { maximumFractionDigits: 0 })} Đ`;
 }
