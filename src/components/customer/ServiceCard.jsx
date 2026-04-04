@@ -1,4 +1,5 @@
 import { Clock3 } from "lucide-react";
+import { formatCurrency } from "../../utils/formatters";
 import { Link } from "react-router-dom";
 
 export default function ServiceCard({ service }) {
@@ -22,7 +23,7 @@ export default function ServiceCard({ service }) {
             </h3>
           </div>
           <span className="text-lg font-semibold text-rose-600">
-            ${service.price}
+            {formatCurrency(service.price)}
           </span>
         </div>
         <p className="text-sm leading-6 text-stone-600">

@@ -6,6 +6,7 @@ import StatusBadge from "../../components/shared/StatusBadge";
 import { SERVICE_STATUS_LABELS } from "../../constants/serviceStatus";
 import { mapServiceForUi } from "../../lib/service-mappers";
 import { addToCart } from "../../utils/customerStorage";
+import { formatCurrency } from "../../utils/formatters";
 
 export default function ServiceDetailPage() {
   const { id } = useParams();
@@ -127,7 +128,9 @@ export default function ServiceDetailPage() {
             <div className="rounded-3xl bg-stone-50 p-4">
               <CalendarDays className="h-5 w-5 text-rose-500" />
               <p className="mt-3 text-sm text-stone-500">Price</p>
-              <p className="font-semibold text-stone-900">${service.price}</p>
+              <p className="font-semibold text-stone-900">
+                {formatCurrency(service.price)}
+              </p>
             </div>
             <div className="rounded-3xl bg-stone-50 p-4">
               <ShieldCheck className="h-5 w-5 text-rose-500" />

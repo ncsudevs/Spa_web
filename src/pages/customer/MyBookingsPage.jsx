@@ -1,31 +1,43 @@
-import { CheckCircle2, CalendarRange, Landmark, Wallet, ExternalLink } from "lucide-react";
+import {
+  CheckCircle2,
+  CalendarRange,
+  Landmark,
+  Wallet,
+  ExternalLink,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { createPayment } from "../../api/paymentApi";
 import { getBookings } from "../../api/bookingApi";
 import { useAuth } from "../../context/AuthContext";
 import StatusBadge from "../../components/shared/StatusBadge";
 import { clearCart } from "../../utils/customerStorage";
-import { formatCurrency, formatDate, formatDateTime } from "../../utils/formatters";
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+} from "../../utils/formatters";
 
 const paymentMethods = [
   {
     id: "MOMO",
     label: "MoMo",
     icon: Wallet,
-    description: "Create a real MoMo sandbox payment session and redirect to the hosted QR page.",
+    description:
+      "Create a real MoMo sandbox payment session and redirect to the hosted QR page.",
   },
   {
     id: "BANK_TRANSFER",
     label: "Bank Transfer",
     icon: Landmark,
-    description: "Create a bank transfer request and wait for admin confirmation.",
+    description:
+      "Create a bank transfer request and wait for admin confirmation.",
   },
 ];
 
 export default function MyBookingsPage() {
   const location = useLocation();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +46,7 @@ export default function MyBookingsPage() {
   const [method, setMethod] = useState("MOMO");
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [submittingPayment, setSubmittingPayment] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const paymentSuccess = location.state?.paymentSuccess;
   const bookingCreated = location.state?.bookingCreated;
   const bookingCode = location.state?.bookingCode;
@@ -41,6 +54,8 @@ export default function MyBookingsPage() {
 
   useEffect(() => {
     loadBookings();
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const selectedBooking = useMemo(
@@ -76,13 +91,16 @@ export default function MyBookingsPage() {
       await loadBookings();
 
       if (method === "MOMO") {
-        const hostedUrl = payment.payUrl || payment.qrCodeUrl || payment.deepLink;
+        const hostedUrl =
+          payment.payUrl || payment.qrCodeUrl || payment.deepLink;
         if (hostedUrl) {
           window.location.href = hostedUrl;
           return;
         }
 
-        setError("MoMo payment session was created but no hosted payment URL was returned by the server.");
+        setError(
+          "MoMo payment session was created but no hosted payment URL was returned by the server.",
+        );
       }
     } catch (err) {
       setError(err.message || "Cannot create payment.");
@@ -98,7 +116,9 @@ export default function MyBookingsPage() {
           <CheckCircle2 className="mt-0.5 h-5 w-5" />
           <div>
             <p className="font-semibold">
-              {paymentInfo || paymentSuccess ? "Payment request created" : "Booking created successfully"}
+              {paymentInfo || paymentSuccess
+                ? "Payment request created"
+                : "Booking created successfully"}
             </p>
             <p className="text-sm">
               {paymentInfo
@@ -120,7 +140,8 @@ export default function MyBookingsPage() {
         </h1>
         <p className="mt-3 text-stone-600">Signed in as {user?.email}</p>
         <p className="mt-2 text-sm text-stone-500">
-          New flow: create the booking first, review it here, then start the payment request.
+          New flow: create the booking first, review it here, then start the
+          payment request.
         </p>
 
         {error && (
@@ -133,9 +154,18 @@ export default function MyBookingsPage() {
           <p className="font-semibold text-stone-900">Payment status guide</p>
           <ul className="mt-3 space-y-2 text-sm text-stone-600">
             <li>UNPAID: no payment request has been created yet.</li>
-            <li>PENDING: the request was created and is waiting for admin confirmation.</li>
-            <li>PAID: payment was confirmed and the booking automatically becomes CONFIRMED.</li>
-            <li>REJECTED: the payment proof or transfer information was not accepted.</li>
+            <li>
+              PENDING: the request was created and is waiting for admin
+              confirmation.
+            </li>
+            <li>
+              PAID: payment was confirmed and the booking automatically becomes
+              CONFIRMED.
+            </li>
+            <li>
+              REJECTED: the payment proof or transfer information was not
+              accepted.
+            </li>
           </ul>
         </div>
 
@@ -143,34 +173,54 @@ export default function MyBookingsPage() {
           <div className="mt-8 rounded-[28px] border border-amber-200 bg-amber-50 p-6 text-stone-700">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">Latest payment instruction</p>
-                <h2 className="mt-2 text-2xl font-semibold text-stone-900">{paymentInfo.providerName}</h2>
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-700">
+                  Latest payment instruction
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold text-stone-900">
+                  {paymentInfo.providerName}
+                </h2>
               </div>
               <StatusBadge value={paymentInfo.status} />
             </div>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl bg-white p-4">
-                <p className="text-sm text-stone-500">Wallet / account number</p>
-                <p className="mt-1 font-semibold text-stone-900">{paymentInfo.accountNumber}</p>
+                <p className="text-sm text-stone-500">
+                  Wallet / account number
+                </p>
+                <p className="mt-1 font-semibold text-stone-900">
+                  {paymentInfo.accountNumber}
+                </p>
               </div>
               <div className="rounded-2xl bg-white p-4">
                 <p className="text-sm text-stone-500">Account holder</p>
-                <p className="mt-1 font-semibold text-stone-900">{paymentInfo.accountName}</p>
+                <p className="mt-1 font-semibold text-stone-900">
+                  {paymentInfo.accountName}
+                </p>
               </div>
               <div className="rounded-2xl bg-white p-4">
                 <p className="text-sm text-stone-500">Transfer content</p>
-                <p className="mt-1 font-semibold text-stone-900">{paymentInfo.paymentContent}</p>
+                <p className="mt-1 font-semibold text-stone-900">
+                  {paymentInfo.paymentContent}
+                </p>
               </div>
               <div className="rounded-2xl bg-white p-4">
                 <p className="text-sm text-stone-500">Amount</p>
-                <p className="mt-1 font-semibold text-stone-900">{formatCurrency(paymentInfo.amount)}</p>
+                <p className="mt-1 font-semibold text-stone-900">
+                  {formatCurrency(paymentInfo.amount)}
+                </p>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
               {paymentInfo.method === "MOMO" ? (
                 <button
                   type="button"
-                  onClick={() => { const hostedUrl = paymentInfo?.payUrl || paymentInfo?.qrCodeUrl || paymentInfo?.deepLink; if (hostedUrl) window.location.href = hostedUrl; }}
+                  onClick={() => {
+                    const hostedUrl =
+                      paymentInfo?.payUrl ||
+                      paymentInfo?.qrCodeUrl ||
+                      paymentInfo?.deepLink;
+                    if (hostedUrl) window.location.href = hostedUrl;
+                  }}
                   className="inline-flex items-center gap-2 rounded-full bg-stone-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-500"
                 >
                   <ExternalLink className="h-4 w-4" />
@@ -200,6 +250,42 @@ export default function MyBookingsPage() {
               const isPending = booking.paymentStatus === "PENDING";
               const isPaid = booking.paymentStatus === "PAID";
               const isRejected = booking.paymentStatus === "REJECTED";
+              const isCancelled = booking.status === "CANCELLED";
+
+              const appointmentDate = booking.appointmentDate
+                ? new Date(booking.appointmentDate)
+                : null;
+              const isExpiredDate =
+                appointmentDate &&
+                appointmentDate < new Date(new Date(now).toDateString());
+
+              const paymentAttempts = booking.paymentAttempts ?? 1;
+              const lastPaymentCreated =
+                booking.lastPaymentCreatedAt ||
+                booking.updatedAt ||
+                booking.createdAt;
+              const expiresAt =
+                lastPaymentCreated != null
+                  ? new Date(lastPaymentCreated).getTime() + 5 * 60 * 1000
+                  : null;
+              const secondsLeft =
+                expiresAt && expiresAt > now
+                  ? Math.max(0, Math.floor((expiresAt - now) / 1000))
+                  : 0;
+              const countdown =
+                secondsLeft > 0
+                  ? `${Math.floor(secondsLeft / 60)
+                      .toString()
+                      .padStart(2, "0")}:${(secondsLeft % 60)
+                      .toString()
+                      .padStart(2, "0")}`
+                  : null;
+              const isTtlExpired = expiresAt != null && expiresAt <= now;
+
+              const canRetry =
+                (isPending || isRejected || isCancelled || canPay) &&
+                paymentAttempts < 3 &&
+                !isExpiredDate;
               return (
                 <article
                   key={booking.id}
@@ -211,9 +297,13 @@ export default function MyBookingsPage() {
                         <h2 className="text-xl font-semibold text-stone-900">
                           {booking.bookingCode}
                         </h2>
-                        <span className="text-sm text-stone-500">payment status:</span>
+                        <span className="text-sm text-stone-500">
+                          payment status:
+                        </span>
                         <StatusBadge value={booking.paymentStatus} />
-                        <span className="text-sm text-stone-500">booking status:</span>
+                        <span className="text-sm text-stone-500">
+                          booking status:
+                        </span>
                         <StatusBadge value={booking.status} />
                       </div>
                       <p className="mt-3 text-sm text-stone-600">
@@ -234,7 +324,8 @@ export default function MyBookingsPage() {
                               {item.serviceName}
                             </p>
                             <p className="mt-1 text-xs text-stone-500">
-                              {formatDate(item.appointmentDate)} at {item.appointmentTime}
+                              {formatDate(item.appointmentDate)} at{" "}
+                              {item.appointmentTime}
                             </p>
                             <p className="mt-1 text-xs text-stone-500">
                               {item.quantity} x {formatCurrency(item.unitPrice)}
@@ -253,13 +344,17 @@ export default function MyBookingsPage() {
                         Created at {formatDateTime(booking.createdAt)}
                       </p>
 
-                      {canPay ? (
+                      {canPay || isRejected || isCancelled ? (
                         <div className="mt-4 space-y-3">
-                          <p className="text-sm font-semibold text-stone-900">Choose payment method</p>
+                          <p className="text-sm font-semibold text-stone-900">
+                            Choose payment method
+                          </p>
                           <div className="grid gap-3">
                             {paymentMethods.map((item) => {
                               const Icon = item.icon;
-                              const selected = selectedBookingId === booking.id && method === item.id;
+                              const selected =
+                                selectedBookingId === booking.id &&
+                                method === item.id;
                               return (
                                 <button
                                   key={item.id}
@@ -268,12 +363,19 @@ export default function MyBookingsPage() {
                                     setSelectedBookingId(booking.id);
                                     setMethod(item.id);
                                   }}
-                                  className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left ${selected ? "border-rose-300 bg-rose-50" : "border-stone-200"}`}
+                                  className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left ${selected ? "border-rose-300 bg-rose-50" : "border-stone-200"} ${!canRetry ? "opacity-50" : ""}`}
+                                  disabled={!canRetry}
                                 >
-                                  <span className="mt-0.5 rounded-full bg-white p-2 shadow-sm"><Icon className="h-4 w-4 text-rose-500" /></span>
+                                  <span className="mt-0.5 rounded-full bg-white p-2 shadow-sm">
+                                    <Icon className="h-4 w-4 text-rose-500" />
+                                  </span>
                                   <span>
-                                    <span className="block text-sm font-semibold text-stone-900">{item.label}</span>
-                                    <span className="text-xs text-stone-500">{item.description}</span>
+                                    <span className="block text-sm font-semibold text-stone-900">
+                                      {item.label}
+                                    </span>
+                                    <span className="text-xs text-stone-500">
+                                      {item.description}
+                                    </span>
                                   </span>
                                 </button>
                               );
@@ -282,19 +384,64 @@ export default function MyBookingsPage() {
                           <button
                             type="button"
                             onClick={() => handleCreatePayment(booking)}
-                            disabled={submittingPayment}
+                            disabled={submittingPayment || !canRetry}
                             className="inline-flex w-full items-center justify-center rounded-full bg-stone-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:opacity-60"
                           >
-                            {submittingPayment && selectedBookingId === booking.id ? "Creating request..." : method === "MOMO" ? "Pay with MoMo" : "Create payment request"}
+                            {submittingPayment &&
+                            selectedBookingId === booking.id
+                              ? "Creating request..."
+                              : method === "MOMO"
+                                ? "Pay with MoMo"
+                                : "Create payment request"}
                           </button>
+                          {!canRetry ? (
+                            <p className="text-xs text-stone-500">
+                              {isExpiredDate
+                                ? "Appointment date has passed. Payment is disabled."
+                                : `Retry limit reached (${paymentAttempts}/3).`}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-stone-500">
+                              Attempts used: {paymentAttempts}/3.{" "}
+                              {countdown
+                                ? `MoMo session expires in ${countdown}.`
+                                : isTtlExpired
+                                  ? "Session expired; create a new payment to get a fresh QR."
+                                  : "Session may be expired; click to get a new QR."}
+                            </p>
+                          )}
                         </div>
                       ) : isPending ? (
-                        <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                          Payment request submitted. For MoMo, complete the payment on the hosted page and wait for the IPN update.
+                        <div className="mt-4 space-y-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                          <p>
+                            Payment request submitted. For MoMo, complete the
+                            payment on the hosted page and wait for the IPN
+                            update. Session valid within ~5 minutes; if expired,
+                            creating again will issue a new QR.
+                          </p>
+                          <p className="text-xs font-semibold tracking-wide text-amber-700">
+                            {countdown
+                              ? `Session auto-expires in ${countdown}.`
+                              : isTtlExpired
+                                ? "Session expired; create a new payment to get a fresh QR."
+                                : "Unable to determine remaining time; recreate if the hosted page fails."}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleCreatePayment(booking)}
+                            disabled={submittingPayment}
+                            className="inline-flex items-center gap-2 rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:opacity-60"
+                          >
+                            {submittingPayment &&
+                            selectedBookingId === booking.id
+                              ? "Recreating session..."
+                              : "Resume MoMo payment"}
+                          </button>
                         </div>
                       ) : isRejected ? (
                         <div className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                          This payment request was rejected. Please create a new payment request.
+                          This payment request was rejected. Please create a new
+                          payment request.
                         </div>
                       ) : isPaid ? (
                         <div className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">

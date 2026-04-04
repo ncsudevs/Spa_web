@@ -17,6 +17,7 @@ import {
 import { useServiceCategories } from "../../hooks/useServiceCategories";
 import { useServices } from "../../hooks/useServices";
 import { getServiceImageUrl } from "../../lib/service-mappers";
+import { formatCurrency } from "../../utils/formatters";
 
 export default function ServicePage() {
   const { categories, reload: reloadCategories } = useServiceCategories();
@@ -261,7 +262,7 @@ export default function ServicePage() {
                       {item.duration ?? "-"}
                     </td>
                     <td className="p-4 text-rose-600">
-                      {item.price != null ? `$${item.price}` : "-"}
+                      {item.price != null ? formatCurrency(item.price) : "-"}
                     </td>
                     <td className="p-4">
                       <StatusBadge

@@ -14,6 +14,7 @@ import {
   updateCartItem,
 } from "../../utils/customerStorage";
 import { useMemo, useState } from "react";
+import { formatCurrency } from "../../utils/formatters";
 
 export default function CartPage() {
   const [cart, setCart] = useState(() => readCart());
@@ -155,7 +156,7 @@ export default function CartPage() {
                         {item.service.categoryName || item.service.category}
                       </p>
                       <p className="mt-3 text-sm text-stone-600">
-                        ${item.service.price} each
+                        {formatCurrency(item.service.price)} each
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
@@ -189,7 +190,7 @@ export default function CartPage() {
                         </button>
                       </div>
                       <div className="min-w-20 text-right text-lg font-semibold text-stone-900">
-                        ${item.service.price * item.quantity}
+                        {formatCurrency(item.service.price * item.quantity)}
                       </div>
                       <button
                         type="button"
@@ -219,11 +220,11 @@ export default function CartPage() {
             </div>
             <div className="flex items-center justify-between">
               <span>Cart subtotal</span>
-              <span>${subtotal}</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span>Selected subtotal</span>
-              <span>${selectedSubtotal}</span>
+              <span>{formatCurrency(selectedSubtotal)}</span>
             </div>
             <div className="flex items-center justify-between text-xs text-stone-400">
               <span>Selection rule</span>
@@ -233,7 +234,7 @@ export default function CartPage() {
           <div className="mt-6 border-t border-white/10 pt-6">
             <div className="flex items-center justify-between text-xl font-semibold">
               <span>Total</span>
-              <span>${selectedSubtotal}</span>
+              <span>{formatCurrency(selectedSubtotal)}</span>
             </div>
           </div>
           <button
