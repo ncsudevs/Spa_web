@@ -1,5 +1,6 @@
-import { Activity, CalendarCheck2, CreditCard, FileText, LayoutDashboard, Scissors, Tags } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { Activity, CalendarCheck2, CreditCard, FileText, LayoutDashboard, LogOut, Scissors, Tags } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const menu = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -11,6 +12,9 @@ const menu = [
 ];
 
 export default function Sidebar() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
   return (
     <aside className="flex min-h-screen w-72 flex-col border-r border-stone-800 bg-stone-950 px-5 py-6 text-stone-200">
       <div className="mb-8 flex items-center gap-3 px-3">
@@ -19,7 +23,7 @@ export default function Sidebar() {
         </span>
         <div>
           <p className="font-semibold text-white">SuSpa Admin</p>
-          <p className="text-xs text-stone-500">Management console</p>
+          <p className="text-xs text-stone-500">{user?.fullName || "Management console"}</p>
         </div>
       </div>
 
@@ -32,9 +36,7 @@ export default function Sidebar() {
               to={m.to}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
-                  isActive
-                    ? "bg-white text-stone-950 shadow-sm"
-                    : "text-stone-400 hover:bg-stone-900 hover:text-white"
+                  isActive ? "bg-white text-stone-950 shadow-sm" : "text-stone-400 hover:bg-stone-900 hover:text-white"
                 }`
               }
             >
@@ -44,6 +46,18 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      <button
+        type="button"
+        onClick={() => {
+          logout();
+          navigate("/login");
+        }}
+        className="mt-auto flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-stone-400 transition hover:bg-stone-900 hover:text-white"
+      >
+        <LogOut className="h-4 w-4" />
+        Logout
+      </button>
     </aside>
   );
 }

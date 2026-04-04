@@ -2,7 +2,9 @@ import { ArrowLeft, CalendarDays, Clock3, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getServiceById } from "../../api/serviceApi";
-import { mapServiceForUi } from "../../data/serviceVisuals";
+import StatusBadge from "../../components/shared/StatusBadge";
+import { SERVICE_STATUS_LABELS } from "../../constants/serviceStatus";
+import { mapServiceForUi } from "../../lib/service-mappers";
 import { addToCart } from "../../utils/customerStorage";
 
 export default function ServiceDetailPage() {
@@ -27,9 +29,11 @@ export default function ServiceDetailPage() {
       }
     }
 
+    // Detail page still applies the same mapper so image and status fields stay consistent with listing pages.
     loadServiceDetail();
   }, [id]);
 
+  // Cart action stores the selected service before redirecting to the cart page.
   const handleAddToCart = () => {
     if (!service) return;
     addToCart(service);
@@ -71,8 +75,8 @@ export default function ServiceDetailPage() {
       </Link>
 
       <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="overflow-hidden rounded-4x1 bg-white shadow-sm">
-          <div className="aspect-5/4 overflow-hidden">
+        <div className="overflow-hidden rounded-[32px] bg-white shadow-sm">
+          <div className="aspect-[5/4] overflow-hidden">
             <img
               src={service.imageUrl}
               alt={service.name}
@@ -81,18 +85,28 @@ export default function ServiceDetailPage() {
           </div>
         </div>
 
-        <div className="rounded-4x1 bg-white p-8 shadow-sm lg:p-10">
-          <span className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-rose-600">
-            {service.category}
-          </span>
-          <h1 className="mt-4 text-4xl font-semibold text-stone-900">
-            {service.name}
-          </h1>
+        <div className="rounded-[32px] bg-white p-8 shadow-sm lg:p-10">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <span className="inline-flex rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-rose-600">
+                {service.category}
+              </span>
+              <h1 className="mt-4 text-4xl font-semibold text-stone-900">
+                {service.name}
+              </h1>
+            </div>
+            <StatusBadge
+              value={service.status}
+              labels={SERVICE_STATUS_LABELS}
+            />
+          </div>
+
           <p className="mt-4 text-base leading-7 text-stone-600">
             {service.description}
           </p>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          {/* Summary cards present the most important booking information without sending users to another screen. */}
+          <div className="mt-6 grid gap-4 sm:grid-cols-4">
             <div className="rounded-3xl bg-stone-50 p-4">
               <Clock3 className="h-5 w-5 text-rose-500" />
               <p className="mt-3 text-sm text-stone-500">Duration</p>
@@ -103,12 +117,24 @@ export default function ServiceDetailPage() {
             <div className="rounded-3xl bg-stone-50 p-4">
               <ShieldCheck className="h-5 w-5 text-rose-500" />
               <p className="mt-3 text-sm text-stone-500">Status</p>
-              <p className="font-semibold text-stone-900">{service.status}</p>
+              <div className="mt-2">
+                <StatusBadge
+                  value={service.status}
+                  labels={SERVICE_STATUS_LABELS}
+                />
+              </div>
             </div>
             <div className="rounded-3xl bg-stone-50 p-4">
               <CalendarDays className="h-5 w-5 text-rose-500" />
               <p className="mt-3 text-sm text-stone-500">Price</p>
               <p className="font-semibold text-stone-900">${service.price}</p>
+            </div>
+            <div className="rounded-3xl bg-stone-50 p-4">
+              <ShieldCheck className="h-5 w-5 text-rose-500" />
+              <p className="mt-3 text-sm text-stone-500">Capacity</p>
+              <p className="font-semibold text-stone-900">
+                {service.slotCapacity || 5} / time
+              </p>
             </div>
           </div>
 

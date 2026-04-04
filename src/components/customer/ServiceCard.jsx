@@ -33,7 +33,7 @@ export default function ServiceCard({ service }) {
             <Clock3 className="h-4 w-4" />
             {service.duration} min
           </span>
-          <span className="font-medium">{service.status}</span>
+          <span className="font-medium">{service.slotCapacity || 5} slots / time</span>
         </div>
         <Link
           to={`/services/${service.id}`}

@@ -1,6 +1,5 @@
 import { http } from "./http";
 
-// Payment requests are kept explicit because payment is the last step in the customer flow.
 const BASE = import.meta.env.VITE_BASE_API + "/api/payments";
 
 export function getPayments() {
@@ -15,5 +14,18 @@ export function createPayment(payload) {
   return http(BASE, {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export function updatePaymentStatus(id, status) {
+  return http(`${BASE}/${id}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export function deletePayment(id) {
+  return http(`${BASE}/${id}`, {
+    method: "DELETE",
   });
 }

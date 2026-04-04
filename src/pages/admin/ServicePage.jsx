@@ -1,328 +1,446 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { Edit, EyeOff, Plus, Scissors, Trash2 } from "lucide-react";
 import {
-  getServices,
   createService,
-  updateService,
   deleteService,
+  updateService,
 } from "../../api/serviceApi";
-import { getCategories } from "../../api/serviceCategoryApi";
-import { Edit, Trash2, Plus } from "lucide-react";
-
-function getPreviewUrl(imageUrl) {
-  if (!imageUrl) return "/placeholder-service.svg";
-  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://"))
-    return imageUrl;
-  return `${import.meta.env.VITE_BASE_API}${imageUrl}`;
-}
+import AppButton from "../../components/app/AppButton";
+import EmptyState from "../../components/shared/EmptyState";
+import PageHeader from "../../components/shared/PageHeader";
+import SectionCard from "../../components/shared/SectionCard";
+import StatusBadge from "../../components/shared/StatusBadge";
+import {
+  SERVICE_STATUS_LABELS,
+  SERVICE_STATUS_OPTIONS,
+} from "../../constants/serviceStatus";
+import { useServiceCategories } from "../../hooks/useServiceCategories";
+import { useServices } from "../../hooks/useServices";
+import { getServiceImageUrl } from "../../lib/service-mappers";
 
 export default function ServicePage() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [categories, setCategories] = useState([]);
-  const [categoryId, setCategoryId] = useState("");
+  const { categories, reload: reloadCategories } = useServiceCategories();
+  const {
+    services: items,
+    loading,
+    error: loadError,
+    reload: reloadServices,
+  } = useServices();
+  const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [description, setDescription] = useState("");
-  const [duration, setDuration] = useState("");
-  const [status, setStatus] = useState("ACTIVE");
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    price: "",
+    description: "",
+    duration: "",
+    slotCapacity: "5",
+    status: "ACTIVE",
+    categoryId: "",
+    imageFile: null,
+    imagePreview: "",
+  });
 
-  async function loadData() {
-    try {
-      setErr("");
-      setLoading(true);
-      const [sv, cats] = await Promise.all([getServices(), getCategories()]);
-      setItems(sv || []);
-      setCategories(cats || []);
-      if (!categoryId && (cats || []).length > 0) {
-        setCategoryId(String(cats[0].id));
-      }
-    } catch (e) {
-      setErr(e.message || "Failed to fetch");
-    } finally {
-      setLoading(false);
-    }
+  const displayError = error || loadError;
+
+  const categoriesReady = categories.length > 0;
+
+  // Summary cards help admins understand how many services are visible versus hidden.
+  const summary = useMemo(
+    () => ({
+      total: items.length,
+      visible: items.filter(
+        (item) => (item.status || "ACTIVE").toUpperCase() === "ACTIVE",
+      ).length,
+      hidden: items.filter(
+        (item) => (item.status || "ACTIVE").toUpperCase() === "INACTIVE",
+      ).length,
+    }),
+    [items],
+  );
+
+  function updateField(name, value) {
+    setForm((current) => ({ ...current, [name]: value }));
   }
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  function resetForm() {
+  // Reset prepares the form for create mode and optionally preselects the first available category.
+  function resetForm(nextCategoryId = categories[0]?.id ?? "") {
     setEditingId(null);
-    setName("");
-    setPrice("");
-    setDescription("");
-    setDuration("");
-    setStatus("ACTIVE");
-    setImageFile(null);
-    setImagePreview("");
-    if (categories.length > 0) setCategoryId(String(categories[0].id));
-    else setCategoryId("");
+    setForm({
+      name: "",
+      price: "",
+      description: "",
+      duration: "",
+      slotCapacity: "5",
+      status: "ACTIVE",
+      categoryId: nextCategoryId ? String(nextCategoryId) : "",
+      imageFile: null,
+      imagePreview: "",
+    });
+  }
+
+  // Shared reload keeps service and category sources in sync after admin operations.
+  async function reloadAll() {
+    await Promise.allSettled([reloadServices(), reloadCategories()]);
   }
 
   function openAdd() {
-    resetForm();
+    setError("");
+    resetForm(categories[0]?.id ?? "");
     setOpen(true);
   }
 
+  // Edit mode copies the selected row into the form so admins can update status or content quickly.
   function openEdit(item) {
+    setError("");
     setEditingId(item.id);
-    setName(item.name ?? "");
-    setPrice(item.price != null ? String(item.price) : "");
-    setDescription(item.description ?? "");
-    setDuration(item.duration != null ? String(item.duration) : "");
-    setStatus(item.status ?? "ACTIVE");
-    setCategoryId(item.categoryId != null ? String(item.categoryId) : "");
-    setImageFile(null);
-    setImagePreview(getPreviewUrl(item.imageUrl));
+    setForm({
+      name: item.name ?? "",
+      price: item.price != null ? String(item.price) : "",
+      description: item.description ?? "",
+      duration: item.duration != null ? String(item.duration) : "",
+      slotCapacity: item.slotCapacity != null ? String(item.slotCapacity) : "5",
+      status: item.status ?? "ACTIVE",
+      categoryId: item.categoryId != null ? String(item.categoryId) : "",
+      imageFile: null,
+      imagePreview: getServiceImageUrl(item.imageUrl),
+    });
     setOpen(true);
+  }
+
+  function closeModal() {
+    setOpen(false);
+    setError("");
+    resetForm(categories[0]?.id ?? "");
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     try {
-      setErr("");
+      setError("");
 
-      if (!name.trim()) return setErr("Name is required");
-      if (!categoryId) return setErr("Please choose a category");
+      if (!form.name.trim()) return setError("Name is required.");
+      if (!form.categoryId) return setError("Please choose a category.");
 
+      // Form values are normalized before sending to the API because input values arrive as strings.
       const payload = {
-        name: name.trim(),
-        description: description.trim() || null,
-        price: price === "" ? null : Number(price),
-        duration: duration === "" ? null : Number(duration),
-        status: status || "ACTIVE",
-        categoryId: Number(categoryId),
-        imageFile,
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        price: form.price === "" ? null : Number(form.price),
+        duration: form.duration === "" ? null : Number(form.duration),
+        slotCapacity: form.slotCapacity === "" ? 5 : Number(form.slotCapacity),
+        status: form.status || "ACTIVE",
+        categoryId: Number(form.categoryId),
+        imageFile: form.imageFile,
       };
 
       if (payload.price == null || Number.isNaN(payload.price))
-        return setErr("Price must be a number");
+        return setError("Price must be a number.");
       if (payload.duration == null || Number.isNaN(payload.duration))
-        return setErr("Duration must be a number");
-
-      if (editingId) {
-        await updateService(editingId, payload);
-      } else {
-        await createService(payload);
+        return setError("Duration must be a number.");
+      if (
+        payload.slotCapacity == null ||
+        Number.isNaN(payload.slotCapacity) ||
+        payload.slotCapacity < 1
+      ) {
+        return setError("Slot capacity must be at least 1.");
       }
 
-      setOpen(false);
-      resetForm();
-      await loadData();
-    } catch (e) {
-      setErr(e.message || "Save failed");
+      if (editingId) await updateService(editingId, payload);
+      else await createService(payload);
+
+      closeModal();
+      await reloadAll();
+    } catch (err) {
+      setError(err.message || "Save failed.");
     }
   }
 
   async function handleDelete(item) {
-    const ok = confirm(`Delete service "${item.name}"?`);
-    if (!ok) return;
+    if (!confirm(`Delete service "${item.name}"?`)) return;
     try {
-      setErr("");
+      setError("");
       await deleteService(item.id);
-      await loadData();
-    } catch (e) {
-      setErr(e.message || "Delete failed");
+      await reloadServices();
+    } catch (err) {
+      setError(err.message || "Delete failed.");
     }
   }
 
   return (
-    <div className="p-12">
-      <div className="mb-12 flex items-center justify-between">
-        <h1 className="text-4xl font-semibold">Services</h1>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          <Plus size={18} />
-          Add New Service
-        </button>
+    <div className="p-8 lg:p-12">
+      <PageHeader
+        eyebrow="Admin"
+        title="Service management"
+        description="Use status to control customer visibility. ACTIVE means show on the customer site, INACTIVE means hide it without deleting the service."
+        actions={
+          <AppButton onClick={openAdd} disabled={!categoriesReady}>
+            <Plus size={18} /> Add service
+          </AppButton>
+        }
+      />
+
+      {displayError ? (
+        <p className="mb-4 text-sm text-red-600">{displayError}</p>
+      ) : null}
+
+      <div className="mb-6 grid gap-4 md:grid-cols-3">
+        <SectionCard title="Total services" className="p-5">
+          <p className="text-3xl font-semibold text-stone-900">
+            {summary.total}
+          </p>
+        </SectionCard>
+        <SectionCard title="Showing to customers" className="p-5">
+          <p className="text-3xl font-semibold text-green-700">
+            {summary.visible}
+          </p>
+        </SectionCard>
+        <SectionCard title="Hidden from customers" className="p-5">
+          <p className="text-3xl font-semibold text-stone-700">
+            {summary.hidden}
+          </p>
+        </SectionCard>
       </div>
 
-      {err && <p className="mb-4 text-red-500">{err}</p>}
-
-      <div className="overflow-hidden rounded-2xl bg-card shadow-sm">
-        <table className="w-full">
-          <thead className="bg-secondary">
-            <tr>
-              <th className="p-6 text-left">Image</th>
-              <th className="p-6 text-left">Name</th>
-              <th className="p-6 text-left">Category Name</th>
-              <th className="p-6 text-left">Duration</th>
-              <th className="p-6 text-left">Price</th>
-              <th className="p-6 text-left">Status</th>
-              <th className="p-6 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan="7" className="p-6">
-                  Loading...
-                </td>
-              </tr>
-            ) : items.length === 0 ? (
-              <tr>
-                <td colSpan="7" className="p-6">
-                  No service yet
-                </td>
-              </tr>
-            ) : (
-              items.map((x, idx) => (
-                <tr
-                  key={x.id}
-                  className={idx !== items.length - 1 ? "border-b" : ""}
-                >
-                  <td className="p-6">
-                    <img
-                      src={getPreviewUrl(x.imageUrl)}
-                      alt={x.name}
-                      className="h-16 w-20 rounded-xl object-cover"
-                    />
-                  </td>
-                  <td className="p-6 font-medium">{x.name}</td>
-                  <td className="p-6">
-                    <span className="inline-block rounded-lg bg-accent px-3 py-1 text-sm">
-                      {x.categoryName || "-"}
-                    </span>
-                  </td>
-                  <td className="p-6 text-gray-600">{x.duration ?? "-"}</td>
-                  <td className="p-6 text-primary">
-                    {x.price != null ? x.price : "-"}
-                  </td>
-                  <td className="p-6">
-                    <span className="inline-block rounded-lg bg-green-100 px-3 py-1 text-sm text-green-700">
-                      {x.status ?? "ACTIVE"}
-                    </span>
-                  </td>
-                  <td className="p-6">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => openEdit(x)}
-                        className="rounded-lg p-2 hover:bg-secondary"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(x)}
-                        className="rounded-lg p-2 text-red-500 hover:bg-red-100"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
+      <SectionCard
+        title="Service list"
+        description="This layout follows the cleaner shared-component structure from your idea system."
+      >
+        {loading ? (
+          <div className="py-8 text-sm text-stone-500">Loading services...</div>
+        ) : items.length === 0 ? (
+          <EmptyState
+            icon={Scissors}
+            title="No services yet"
+            description="Create your first service to make it available for booking."
+            action={
+              <AppButton onClick={openAdd} disabled={!categoriesReady}>
+                <Plus size={16} /> Add service
+              </AppButton>
+            }
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[920px]">
+              <thead className="border-b border-stone-200 text-left text-sm text-stone-500">
+                <tr>
+                  <th className="p-4">Image</th>
+                  <th className="p-4">Name</th>
+                  <th className="p-4">Category</th>
+                  <th className="p-4">Duration</th>
+                  <th className="p-4">Price</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4">Slots</th>
+                  <th className="p-4">Actions</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {items.map((item, index) => (
+                  <tr
+                    key={item.id}
+                    className={
+                      index !== items.length - 1
+                        ? "border-b border-stone-100"
+                        : ""
+                    }
+                  >
+                    <td className="p-4">
+                      <img
+                        src={getServiceImageUrl(item.imageUrl)}
+                        alt={item.name}
+                        className="h-16 w-20 rounded-xl object-cover"
+                      />
+                    </td>
+                    <td className="p-4 font-medium text-stone-900">
+                      {item.name}
+                    </td>
+                    <td className="p-4 text-stone-600">
+                      {item.categoryName || "-"}
+                    </td>
+                    <td className="p-4 text-stone-600">
+                      {item.duration ?? "-"}
+                    </td>
+                    <td className="p-4 text-rose-600">
+                      {item.price != null ? `$${item.price}` : "-"}
+                    </td>
+                    <td className="p-4">
+                      <StatusBadge
+                        value={item.status}
+                        labels={SERVICE_STATUS_LABELS}
+                      />
+                    </td>
+                    <td className="p-4 text-stone-600">
+                      {item.slotCapacity ?? 5}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-2">
+                        <AppButton
+                          variant="ghost"
+                          className="px-3 py-2"
+                          onClick={() => openEdit(item)}
+                        >
+                          <Edit size={16} />
+                        </AppButton>
+                        <AppButton
+                          variant="ghost"
+                          className="px-3 py-2 text-red-600 hover:bg-red-50"
+                          onClick={() => handleDelete(item)}
+                        >
+                          <Trash2 size={16} />
+                        </AppButton>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
 
-      {open && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/30 p-4">
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <form
             onSubmit={handleSubmit}
-            className="w-155 rounded-2xl bg-white p-8"
+            className="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl"
           >
-            <h2 className="mb-6 text-xl font-semibold text-amber-600">
-              {editingId ? "Edit Service" : "Add Service"}
-            </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                className="rounded-lg border p-3"
-                placeholder="Service name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-              <input
-                className="rounded-lg border p-3"
-                placeholder="Status (e.g. ACTIVE)"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              />
-              <input
-                className="rounded-lg border p-3"
-                placeholder="Duration (minutes)"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-              />
-              <input
-                className="rounded-lg border p-3"
-                placeholder="Price"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
-              <select
-                className="rounded-lg border bg-white p-3"
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-              >
-                {categories.length === 0 ? (
-                  <option value="">No categories - create one first</option>
-                ) : (
-                  categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold text-stone-900">
+                  {editingId ? "Edit service" : "Add service"}
+                </h2>
+                <p className="mt-1 text-sm text-stone-500">
+                  ACTIVE = show to customer, INACTIVE = hide from customer
+                  pages.
+                </p>
+              </div>
+              <StatusBadge value={form.status} labels={SERVICE_STATUS_LABELS} />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="text-sm text-stone-700">
+                <span className="mb-2 block font-medium">Service name</span>
+                <input
+                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                  value={form.name}
+                  onChange={(e) => updateField("name", e.target.value)}
+                />
+              </label>
+              <label className="text-sm text-stone-700">
+                <span className="mb-2 block font-medium">Category</span>
+                <select
+                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                  value={form.categoryId}
+                  onChange={(e) => updateField("categoryId", e.target.value)}
+                >
+                  <option value="">Select category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
-                  ))
-                )}
-              </select>
-              <input
-                type="file"
-                accept=".jpg,.jpeg,.png,.webp"
-                className="rounded-lg border p-3"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setImageFile(file);
-                  setImagePreview(
-                    file ? URL.createObjectURL(file) : imagePreview,
-                  );
-                }}
-              />
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm text-stone-700">
+                <span className="mb-2 block font-medium">Price</span>
+                <input
+                  type="number"
+                  min="0"
+                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                  value={form.price}
+                  onChange={(e) => updateField("price", e.target.value)}
+                />
+              </label>
+              <label className="text-sm text-stone-700">
+                <span className="mb-2 block font-medium">
+                  Duration (minutes)
+                </span>
+                <input
+                  type="number"
+                  min="1"
+                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                  value={form.duration}
+                  onChange={(e) => updateField("duration", e.target.value)}
+                />
+              </label>
+              <label className="text-sm text-stone-700">
+                <span className="mb-2 block font-medium">Slots per time</span>
+                <input
+                  type="number"
+                  min="1"
+                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                  value={form.slotCapacity}
+                  onChange={(e) => updateField("slotCapacity", e.target.value)}
+                />
+              </label>
+              <label className="text-sm text-stone-700">
+                <span className="mb-2 block font-medium">
+                  Visibility status
+                </span>
+                {/* ACTIVE shows the service on customer pages, INACTIVE keeps the record but hides it from customers. */}
+                <select
+                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                  value={form.status}
+                  onChange={(e) => updateField("status", e.target.value)}
+                >
+                  {SERVICE_STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="md:col-span-2 text-sm text-stone-700">
+                <span className="mb-2 block font-medium">Description</span>
+                <textarea
+                  rows="4"
+                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                  value={form.description}
+                  onChange={(e) => updateField("description", e.target.value)}
+                />
+              </label>
+              <label className="md:col-span-2 text-sm text-stone-700">
+                <span className="mb-2 block font-medium">Service image</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="w-full rounded-xl border border-stone-200 px-4 py-3"
+                  onChange={(e) =>
+                    updateField("imageFile", e.target.files?.[0] || null)
+                  }
+                />
+              </label>
             </div>
-            <input
-              className="mt-4 w-full rounded-lg border p-3"
-              placeholder="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-            <div className="mt-4">
-              <p className="mb-2 text-sm font-medium text-stone-600">
-                Image preview
-              </p>
-              <img
-                src={imagePreview || "/placeholder-service.svg"}
-                alt="preview"
-                className="h-36 w-48 rounded-xl object-cover"
-              />
-            </div>
+
+            {form.imagePreview ? (
+              <div className="mt-5 rounded-2xl border border-stone-200 p-3">
+                <p className="mb-3 text-sm font-medium text-stone-700">
+                  Current image
+                </p>
+                <img
+                  src={form.imagePreview}
+                  alt="Service preview"
+                  className="h-40 w-full rounded-2xl object-cover"
+                />
+              </div>
+            ) : null}
+
+            {error ? (
+              <p className="mt-4 text-sm text-red-600">{error}</p>
+            ) : null}
+
             <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  resetForm();
-                }}
-                className="rounded-lg px-4 py-2"
-              >
+              <AppButton type="button" variant="ghost" onClick={closeModal}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-lg bg-primary px-4 py-2 text-black"
-              >
-                Save
-              </button>
+              </AppButton>
+              <AppButton type="submit">
+                {form.status === "INACTIVE" ? <EyeOff size={16} /> : null}
+                {editingId ? "Save changes" : "Create service"}
+              </AppButton>
             </div>
           </form>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

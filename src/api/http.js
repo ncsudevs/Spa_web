@@ -1,12 +1,12 @@
-// Centralized fetch wrapper used across the frontend.
-// The helper keeps request/response handling consistent and normalizes API errors
-// into regular JavaScript Error objects that page components can render directly.
+import { clearAuth, getToken } from "../utils/authStorage";
+
 export async function http(url, options = {}) {
-  // FormData requests must allow the browser to set the multipart boundary automatically.
   const isFormData = options.body instanceof FormData;
+  const token = getToken();
 
   const headers = {
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
 
@@ -16,6 +16,10 @@ export async function http(url, options = {}) {
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      clearAuth();
+    }
+
     const contentType = res.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
@@ -32,7 +36,6 @@ export async function http(url, options = {}) {
     throw new Error(errText || `HTTP ${res.status}`);
   }
 
-  // NoContent endpoints are treated as successful operations with no payload.
   if (res.status === 204) return null;
 
   const contentType = res.headers.get("content-type") || "";

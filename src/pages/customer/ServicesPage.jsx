@@ -1,59 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { Search, Sparkles } from "lucide-react";
 import ServiceCard from "../../components/customer/ServiceCard";
-import { getCategories } from "../../api/serviceCategoryApi";
-import { getServices } from "../../api/serviceApi";
-import { mapServiceForUi } from "../../data/serviceVisuals";
+import EmptyState from "../../components/shared/EmptyState";
+import PageHeader from "../../components/shared/PageHeader";
+import SectionCard from "../../components/shared/SectionCard";
+import { useServiceCategories } from "../../hooks/useServiceCategories";
+import { useServices } from "../../hooks/useServices";
 
 export default function ServicesPage() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [keyword, setKeyword] = useState("");
-  const [categories, setCategories] = useState([]);
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { categories } = useServiceCategories();
+  const { services, loading, error, reload } = useServices({
+    categoryId: selectedCategory?.id ?? null,
+    mapForUi: true,
+  });
 
-  useEffect(() => {
-    async function loadInitialData() {
-      try {
-        setLoading(true);
-        setError("");
-        const [categoryData, serviceData] = await Promise.all([
-          getCategories(),
-          getServices(),
-        ]);
-        setCategories(categoryData || []);
-        setServices((serviceData || []).map(mapServiceForUi));
-      } catch (err) {
-        console.error("Cannot load customer services:", err);
-        setError(err.message || "Cannot connect to API.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadInitialData();
-  }, []);
-
-  useEffect(() => {
-    async function loadServicesByCategory() {
-      try {
-        setLoading(true);
-        setError("");
-        const serviceData = await getServices(selectedCategory?.id);
-        setServices((serviceData || []).map(mapServiceForUi));
-      } catch (err) {
-        console.error("Cannot filter services from API:", err);
-        setError(err.message || "Cannot filter services.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (selectedCategory !== null) {
-      loadServicesByCategory();
-    }
-  }, [selectedCategory]);
-
+  // Client-side filter keeps the search input responsive without requiring a new request on every keystroke.
   const filteredServices = useMemo(() => {
     return services.filter((service) => {
       const matchesKeyword =
@@ -70,90 +33,83 @@ export default function ServicesPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-      <div className="rounded-4x1 bg-white p-8 shadow-sm lg:p-10">
-        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-rose-500">
-          Services
-        </p>
-        <div className="mt-3 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="text-4xl font-semibold text-stone-900">
-              Find your perfect treatment
-            </h1>
-            <p className="mt-3 max-w-2xl text-stone-600"></p>
-          </div>
-          <input
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="Search services..."
-            className="h-12 w-full rounded-full border border-stone-200 bg-stone-50 px-5 text-sm outline-none transition focus:border-rose-300 lg:max-w-xs"
-          />
-        </div>
+      <SectionCard>
+        <PageHeader
+          eyebrow="Services"
+          title="Find your perfect treatment"
+          description="Customer pages now consume the same service hook and mapper, and only ACTIVE services can appear here."
+        />
 
-        {error && (
-          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            {error}
-          </div>
-        )}
-
-        <div className="mt-8 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={async () => {
-              setSelectedCategory(null);
-              setLoading(true);
-              try {
-                const serviceData = await getServices();
-                setServices((serviceData || []).map(mapServiceForUi));
-              } catch (err) {
-                setError(err.message || "Cannot load services.");
-              } finally {
-                setLoading(false);
-              }
-            }}
-            className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
-              selectedCategory === null
-                ? "bg-stone-950 text-white"
-                : "bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-rose-600"
-            }`}
-          >
-            All
-          </button>
-
-          {categories.map((category) => (
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-wrap gap-3">
+            {/* Reset button removes the category filter and requests the full service list again. */}
             <button
-              key={category.id}
               type="button"
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => {
+                setSelectedCategory(null);
+                reload(null).catch(() => {});
+              }}
               className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
-                selectedCategory?.id === category.id
+                selectedCategory === null
                   ? "bg-stone-950 text-white"
                   : "bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-rose-600"
               }`}
             >
-              {category.name}
+              All
             </button>
-          ))}
+
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setSelectedCategory(category)}
+                className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                  selectedCategory?.id === category.id
+                    ? "bg-stone-950 text-white"
+                    : "bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-rose-600"
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+
+          <label className="relative block w-full lg:max-w-xs">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <input
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="Search services..."
+              className="h-12 w-full rounded-full border border-stone-200 bg-stone-50 pl-11 pr-5 text-sm outline-none transition focus:border-rose-300"
+            />
+          </label>
         </div>
-      </div>
+
+        {error ? (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            {error}
+          </div>
+        ) : null}
+      </SectionCard>
 
       {loading ? (
         <div className="mt-10 rounded-[28px] bg-white p-10 text-center text-stone-500 shadow-sm">
           Loading services...
         </div>
+      ) : filteredServices.length > 0 ? (
+        <div className="mt-10 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+          {filteredServices.map((service) => (
+            <ServiceCard key={service.id} service={service} />
+          ))}
+        </div>
       ) : (
-        <>
-          <div className="mt-10 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-            {filteredServices.map((service) => (
-              <ServiceCard key={service.id} service={service} />
-            ))}
-          </div>
-
-          {filteredServices.length === 0 && (
-            <div className="mt-10 rounded-[28px] border border-dashed border-stone-300 bg-white p-10 text-center text-stone-500">
-              No services matched your search.
-            </div>
-          )}
-        </>
+        <div className="mt-10">
+          <EmptyState
+            icon={Sparkles}
+            title="No services matched your search"
+            description="Try another keyword or switch to a different category. Hidden services stay invisible here until an admin sets them back to ACTIVE."
+          />
+        </div>
       )}
     </div>
   );
