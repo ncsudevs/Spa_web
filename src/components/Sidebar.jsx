@@ -1,4 +1,4 @@
-import { Activity, CalendarCheck2, CreditCard, FileText, LayoutDashboard, LogOut, Scissors, Tags } from "lucide-react";
+import { Activity, CalendarCheck2, CreditCard, FileText, LayoutDashboard, LogOut, Scissors, Tags, UserRound, Users } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -6,6 +6,8 @@ const menu = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/service-categories", label: "Service Categories", icon: Tags },
   { to: "/admin/services", label: "Services", icon: Scissors },
+  { to: "/admin/customers", label: "Customers", icon: Users },
+  { to: "/admin/staff", label: "Staff", icon: UserRound },
   { to: "/admin/bookings", label: "Bookings", icon: CalendarCheck2 },
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
   { to: "/admin/logs", label: "Logs", icon: FileText },

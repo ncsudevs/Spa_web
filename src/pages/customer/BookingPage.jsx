@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { createBooking, getSlotAvailability } from "../../api/bookingApi";
 import { useAuth } from "../../context/AuthContext";
 import Field from "../../components/app/Field";
+import DatePicker from "../../components/app/DatePicker";
+import { formatDate } from "../../utils/formatters";
 import {
   clearSelectedBookingItems,
   getSelectedBookingItems,
@@ -27,6 +29,17 @@ const PHONE_REGIONS = [
 
 function normalizePhoneInput(value) {
   return value.replace(/\D/g, "").slice(0, PHONE_MAX_LENGTH);
+}
+
+function isPastDateIso(iso) {
+  if (!iso) return true;
+  const date = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return true;
+  const today = new Date();
+  const todayMid = new Date(
+    Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
+  );
+  return date < todayMid;
 }
 
 function buildSelectedCart(cart, selectedServiceIds) {
@@ -113,6 +126,7 @@ export default function BookingPage() {
     bookingUnits.reduce((acc, item) => {
       acc[item.key] = {
         date: "",
+        displayDate: "",
         time: bookingTimeOptions[0],
       };
       return acc;
@@ -121,6 +135,7 @@ export default function BookingPage() {
 
   const [groupSchedule, setGroupSchedule] = useState({
     date: "",
+    displayDate: "",
     time: bookingTimeOptions[0],
   });
 
@@ -164,6 +179,7 @@ export default function BookingPage() {
       const next = bookingUnits.reduce((acc, item) => {
         acc[item.key] = prev[item.key] || {
           date: "",
+          displayDate: "",
           time: bookingTimeOptions[0],
         };
         return acc;
@@ -286,6 +302,25 @@ export default function BookingPage() {
     }));
   }
 
+  function updateAppointmentDateDisplay(key, iso) {
+    setAppointments((prev) => ({
+      ...prev,
+      [key]: {
+        ...prev[key],
+        displayDate: formatDate(iso),
+        date: iso,
+      },
+    }));
+  }
+
+  function updateGroupDate(iso) {
+    setGroupSchedule((prev) => ({
+      ...prev,
+      displayDate: formatDate(iso),
+      date: iso,
+    }));
+  }
+
   function validatePersonalAppointments() {
     const seenSlots = new Map();
 
@@ -294,6 +329,10 @@ export default function BookingPage() {
 
       if (!current?.date || !current?.time) {
         return `Please choose appointment date and preferred time for ${item.serviceName}.`;
+      }
+
+      if (isPastDateIso(current.date)) {
+        return `Appointment date for ${item.serviceName} cannot be in the past.`;
       }
 
       const slotKey = `${current.date}__${current.time}`;
@@ -329,6 +368,9 @@ export default function BookingPage() {
     if (!groupSchedule.date || !groupSchedule.time) {
       return "Please choose the shared appointment date and time for your group.";
     }
+
+    if (isPastDateIso(groupSchedule.date))
+      return "Group booking date cannot be in the past.";
 
     if (!groupAvailability) {
       return "Please wait a moment for slot availability to load.";
@@ -403,7 +445,7 @@ export default function BookingPage() {
     }
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  // const today = new Date().toISOString().split("T")[0];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -547,18 +589,9 @@ export default function BookingPage() {
 
                   <div className="grid gap-5 md:grid-cols-2">
                     <Field label="Shared appointment date">
-                      <input
-                        required
-                        min={today}
-                        type="date"
-                        className="field"
+                      <DatePicker
                         value={groupSchedule.date}
-                        onChange={(e) =>
-                          setGroupSchedule((prev) => ({
-                            ...prev,
-                            date: e.target.value,
-                          }))
-                        }
+                        onChange={updateGroupDate}
                       />
                     </Field>
 
@@ -594,11 +627,6 @@ export default function BookingPage() {
                   <h2 className="text-xl font-semibold text-stone-900">
                     Schedule each service
                   </h2>
-                  <p className="mt-1 text-sm text-stone-500">
-                    Each selected service needs its own appointment date and
-                    preferred time. Available slots are counted per service, per
-                    day, per time.
-                  </p>
                 </div>
 
                 <div className="space-y-4">
@@ -618,7 +646,7 @@ export default function BookingPage() {
                           </p>
                         </div>
                         <p className="text-sm font-semibold text-rose-500">
-                          ${item.price}
+                          {item.price} VND
                         </p>
                       </div>
 
@@ -626,18 +654,10 @@ export default function BookingPage() {
                         <Field
                           label={`Appointment date — ${item.baseServiceName}`}
                         >
-                          <input
-                            required
-                            min={today}
-                            type="date"
-                            className="field"
-                            value={appointments[item.key]?.date || ""}
-                            onChange={(e) =>
-                              updateAppointment(
-                                item.key,
-                                "date",
-                                e.target.value,
-                              )
+                          <DatePicker
+                            value={appointments[item.key]?.date}
+                            onChange={(iso) =>
+                              updateAppointmentDateDisplay(item.key, iso)
                             }
                           />
                         </Field>
@@ -705,8 +725,8 @@ export default function BookingPage() {
                 const key = item.key || item.service.id;
                 const date =
                   bookingMode === "group"
-                    ? groupSchedule.date
-                    : appointments[key]?.date;
+                    ? groupSchedule.displayDate || groupSchedule.date
+                    : appointments[key]?.displayDate || appointments[key]?.date;
                 const time =
                   bookingMode === "group"
                     ? groupSchedule.time
@@ -729,14 +749,14 @@ export default function BookingPage() {
                       <div>
                         <p className="font-medium text-white">{name}</p>
                         <p className="mt-1 text-xs text-stone-400">
-                          {duration} min • {quantity} x ${price}
+                          {duration} min • {quantity} x {price} VND
                         </p>
                         <p className="mt-2 text-xs text-stone-400">
                           {date || "Select date"} • {time || "Select time"}
                         </p>
                       </div>
                       <span className="font-semibold text-white">
-                        ${price * quantity}
+                        {price * quantity} VND
                       </span>
                     </div>
                   </div>
@@ -748,7 +768,7 @@ export default function BookingPage() {
           <div className="mt-6 border-t border-white/10 pt-6">
             <div className="flex items-center justify-between text-xl font-semibold text-white">
               <span>Total</span>
-              <span>${total}</span>
+              <span>{total} VND</span>
             </div>
           </div>
         </aside>

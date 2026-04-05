@@ -16,6 +16,8 @@ import ServicePage from "./pages/admin/ServicePage";
 import BookingAdminPage from "./pages/admin/BookingPage";
 import PaymentAdminPage from "./pages/admin/PaymentPage";
 import LogsPage from "./pages/admin/LogsPage";
+import StaffPage from "./pages/admin/StaffPage";
+import CustomersPage from "./pages/admin/CustomersPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -76,8 +78,10 @@ function App() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="service-categories" element={<ServiceCategoryPage />} />
         <Route path="services" element={<ServicePage />} />
+        <Route path="staff" element={<StaffPage />} />
         <Route path="bookings" element={<BookingAdminPage />} />
         <Route path="payments" element={<PaymentAdminPage />} />
+        <Route path="customers" element={<CustomersPage />} />
         <Route path="logs" element={<LogsPage />} />
       </Route>
 

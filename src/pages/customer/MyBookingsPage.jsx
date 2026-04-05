@@ -26,13 +26,6 @@ const paymentMethods = [
     description:
       "Create a real MoMo sandbox payment session and redirect to the hosted QR page.",
   },
-  {
-    id: "BANK_TRANSFER",
-    label: "Bank Transfer",
-    icon: Landmark,
-    description:
-      "Create a bank transfer request and wait for admin confirmation.",
-  },
 ];
 
 export default function MyBookingsPage() {
@@ -275,8 +268,7 @@ export default function MyBookingsPage() {
                   : parseUtcDate(booking.createdAt);
               const expiresAt =
                 lastPaymentCreated != null
-                  ? // ? lastPaymentCreated.getTime() + 10 * 1000
-                    lastPaymentCreated.getTime() + 1 * 60 * 1000
+                  ? lastPaymentCreated.getTime() + 5 * 60 * 1000
                   : null;
               const secondsLeft =
                 expiresAt && expiresAt > now

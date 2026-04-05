@@ -4,14 +4,14 @@ const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
   timeZone: TZ,
   day: "2-digit",
   month: "2-digit",
-  year: "numeric",
+  year: "2-digit",
 });
 
 const dateTimeFormatter = new Intl.DateTimeFormat("vi-VN", {
   timeZone: TZ,
   day: "2-digit",
   month: "2-digit",
-  year: "numeric",
+  year: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
   second: "2-digit",
@@ -30,7 +30,7 @@ export function formatDate(value) {
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split("-");
-    return `${day}/${month}/${year}`;
+    return `${day}/${month}/${year.slice(-2)}`;
   }
 
   const date = toDate(value);

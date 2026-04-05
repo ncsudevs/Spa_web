@@ -1,4 +1,4 @@
-import { Landmark, Wallet } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createPayment } from "../../api/paymentApi";
@@ -11,12 +11,6 @@ const methods = [
     label: "MoMo",
     icon: Wallet,
     description: "Create a payment request through the MoMo wallet.",
-  },
-  {
-    id: "BANK_TRANSFER",
-    label: "Bank Transfer",
-    icon: Landmark,
-    description: "Create a bank transfer request and wait for admin confirmation.",
   },
 ];
 
