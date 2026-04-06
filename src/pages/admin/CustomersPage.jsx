@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { UserCircle2, Search } from "lucide-react";
-import { getCustomers, getCustomerById } from "../../api/customerApi";
+import { getCustomers, getCustomerById, updateCustomer } from "../../api/customerApi";
 import AppButton from "../../components/app/AppButton";
 import PageHeader from "../../components/shared/PageHeader";
 import SectionCard from "../../components/shared/SectionCard";
@@ -14,6 +14,8 @@ export default function CustomersPage() {
   const [selected, setSelected] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
+  const [editForm, setEditForm] = useState({ fullName: "", phone: "", region: "VN", isActive: true });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     load().catch(() => {});
@@ -38,6 +40,12 @@ export default function CustomersPage() {
       setDetailError("");
       const data = await getCustomerById(id);
       setSelected(data);
+      setEditForm({
+        fullName: data.fullName || "",
+        phone: data.phone || "",
+        region: "VN",
+        isActive: data.isActive ?? true,
+      });
     } catch (err) {
       setDetailError(err.message || "Cannot load customer detail.");
     } finally {
@@ -147,13 +155,59 @@ export default function CustomersPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              <div>
-                <p className="text-lg font-semibold text-stone-900">{selected.fullName}</p>
+              <div className="space-y-2">
+                <p className="text-lg font-semibold text-stone-900">Edit customer</p>
                 <p className="text-sm text-stone-600">{selected.email}</p>
-                <p className="text-sm text-stone-600">{selected.phone || "-"}</p>
-                <p className="mt-1 text-xs text-stone-500">
-                  Created: {formatDateTime(selected.createdAt)}
-                </p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <label className="text-sm text-stone-600">
+                    Full name
+                    <input
+                      className="field mt-1"
+                      value={editForm.fullName}
+                      onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                    />
+                  </label>
+                  <label className="text-sm text-stone-600">
+                    Phone
+                    <input
+                      className="field mt-1"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      placeholder="+8490xxxxxxx"
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-stone-600">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={editForm.isActive}
+                      onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
+                    />
+                    Active
+                  </label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <AppButton
+                    onClick={async () => {
+                      try {
+                        setSaving(true);
+                        await updateCustomer(selected.id, editForm);
+                        await load();
+                        await loadDetail(selected.id);
+                      } catch (err) {
+                        setDetailError(err.message || "Update failed.");
+                      } finally {
+                        setSaving(false);
+                      }
+                    }}
+                    disabled={saving}
+                  >
+                    {saving ? "Saving..." : "Save changes"}
+                  </AppButton>
+                  <p className="text-xs text-stone-500">
+                    Created: {formatDateTime(selected.createdAt)}
+                  </p>
+                </div>
               </div>
 
               <div>

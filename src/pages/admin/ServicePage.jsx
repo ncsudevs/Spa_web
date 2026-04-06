@@ -30,6 +30,7 @@ export default function ServicePage() {
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [open, setOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -203,6 +204,34 @@ export default function ServicePage() {
         </SectionCard>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <AppButton onClick={openAdd} disabled={!categoriesReady}>
+          <Plus size={16} /> Add service
+        </AppButton>
+        <AppButton
+          variant="secondary"
+          disabled={selectedIds.length === 0}
+          onClick={async () => {
+            await bulkUpdateServiceStatus(selectedIds, "INACTIVE");
+            setSelectedIds([]);
+            reloadServices();
+          }}
+        >
+          <EyeOff size={16} /> Inactivate selected
+        </AppButton>
+        <AppButton
+          variant="secondary"
+          disabled={selectedIds.length === 0}
+          onClick={async () => {
+            await bulkUpdateServiceStatus(selectedIds, "ACTIVE");
+            setSelectedIds([]);
+            reloadServices();
+          }}
+        >
+          Activate selected
+        </AppButton>
+      </div>
+
       <SectionCard
         title="Service list"
         description="This layout follows the cleaner shared-component structure from your idea system."
@@ -225,6 +254,21 @@ export default function ServicePage() {
             <table className="w-full min-w-[920px]">
               <thead className="border-b border-stone-200 text-left text-sm text-stone-500">
                 <tr>
+                  <th className="p-4">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={
+                        selectedIds.length > 0 &&
+                        selectedIds.length === items.length
+                      }
+                      onChange={(e) =>
+                        setSelectedIds(
+                          e.target.checked ? items.map((i) => i.id) : [],
+                        )
+                      }
+                    />
+                  </th>
                   <th className="p-4">Image</th>
                   <th className="p-4">Name</th>
                   <th className="p-4">Category</th>
@@ -245,6 +289,20 @@ export default function ServicePage() {
                         : ""
                     }
                   >
+                    <td className="p-4">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={selectedIds.includes(item.id)}
+                        onChange={(e) =>
+                          setSelectedIds((prev) =>
+                            e.target.checked
+                              ? [...prev, item.id]
+                              : prev.filter((x) => x !== item.id),
+                          )
+                        }
+                      />
+                    </td>
                     <td className="p-4">
                       <img
                         src={getServiceImageUrl(item.imageUrl)}

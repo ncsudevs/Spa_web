@@ -27,3 +27,10 @@ export function updateStaff(id, payload) {
 export function deleteStaff(id) {
   return http(`${BASE}/${id}`, { method: "DELETE" });
 }
+
+export function bulkUpdateStaffStatus(ids, status) {
+  return http(`${BASE}/bulk/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ ids, status }),
+  });
+}

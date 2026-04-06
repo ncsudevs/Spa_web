@@ -46,3 +46,10 @@ export function updateService(id, payload) {
 export function deleteService(id) {
   return http(`${BASE}/${id}`, { method: 'DELETE' });
 }
+
+export function bulkUpdateServiceStatus(ids, status) {
+  return http(`${BASE}/bulk/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ ids, status }),
+  });
+}

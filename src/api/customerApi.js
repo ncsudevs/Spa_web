@@ -9,3 +9,10 @@ export function getCustomers() {
 export function getCustomerById(id) {
   return http(`${BASE}/${id}`);
 }
+
+export function updateCustomer(id, payload) {
+  return http(`${BASE}/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}

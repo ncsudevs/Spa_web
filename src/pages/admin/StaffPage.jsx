@@ -4,6 +4,7 @@ import {
   createStaff,
   deleteStaff,
   updateStaff,
+  bulkUpdateStaffStatus,
 } from "../../api/staffApi";
 import AppButton from "../../components/app/AppButton";
 import EmptyState from "../../components/shared/EmptyState";
@@ -18,6 +19,7 @@ export default function StaffPage() {
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [open, setOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -147,6 +149,34 @@ export default function StaffPage() {
         </SectionCard>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <AppButton onClick={openCreate}>
+          <Plus size={16} /> Add staff
+        </AppButton>
+        <AppButton
+          variant="secondary"
+          disabled={selectedIds.length === 0}
+          onClick={async () => {
+            await bulkUpdateStaffStatus(selectedIds, "INACTIVE");
+            setSelectedIds([]);
+            reload();
+          }}
+        >
+          Inactivate selected
+        </AppButton>
+        <AppButton
+          variant="secondary"
+          disabled={selectedIds.length === 0}
+          onClick={async () => {
+            await bulkUpdateStaffStatus(selectedIds, "ACTIVE");
+            setSelectedIds([]);
+            reload();
+          }}
+        >
+          Activate selected
+        </AppButton>
+      </div>
+
       <SectionCard title="Staff list" description="Assign staff to bookings later; ensure they are active.">
         {loading ? (
           <div className="py-8 text-sm text-stone-500">Loading staff...</div>
@@ -166,6 +196,21 @@ export default function StaffPage() {
             <table className="w-full min-w-[860px]">
               <thead className="border-b border-stone-200 text-left text-sm text-stone-500">
                 <tr>
+                  <th className="p-4">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={
+                        selectedIds.length > 0 &&
+                        selectedIds.length === items.length
+                      }
+                      onChange={(e) =>
+                        setSelectedIds(
+                          e.target.checked ? items.map((i) => i.id) : [],
+                        )
+                      }
+                    />
+                  </th>
                   <th className="p-4">Name</th>
                   <th className="p-4">Contact</th>
                   <th className="p-4">Categories</th>
@@ -182,6 +227,20 @@ export default function StaffPage() {
                       index !== items.length - 1 ? "border-b border-stone-100" : ""
                     }
                   >
+                    <td className="p-4">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={selectedIds.includes(item.id)}
+                        onChange={(e) =>
+                          setSelectedIds((prev) =>
+                            e.target.checked
+                              ? [...prev, item.id]
+                              : prev.filter((x) => x !== item.id),
+                          )
+                        }
+                      />
+                    </td>
                     <td className="p-4 font-medium text-stone-900">
                       {item.fullName}
                     </td>
