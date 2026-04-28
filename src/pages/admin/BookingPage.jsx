@@ -17,23 +17,43 @@ import {
   formatDate,
   formatDateTime,
 } from "../../utils/formatters";
+import {
+  getBookingStatusBadgeLabels,
+  getBookingStatusOptions,
+  getBookingWorkflowLabel,
+  getBookingWorkflowStatus,
+} from "../../utils/bookingStatus";
 
-const STATUS_OPTIONS = ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"];
+const STATUS_OPTIONS = getBookingStatusOptions();
 
 function isStatusDisabled(booking, status) {
   if (status === booking.status) return false;
-  if (status === "CONFIRMED" && booking.paymentStatus !== "PAID") return true;
-  if (status === "COMPLETED") {
-    return (
-      booking.paymentStatus !== "PAID" ||
-      !booking.isCheckedIn ||
-      !booking.isFullyStaffed ||
-      !["CONFIRMED", "COMPLETED"].includes(booking.status)
-    );
+  if (booking.status === "CANCELLED") return true;
+
+  switch (status) {
+    case "PENDING":
+      return (
+        booking.paymentStatus === "PAID" ||
+        booking.isCheckedIn ||
+        booking.status === "COMPLETED"
+      );
+    case "CONFIRMED":
+      return (
+        booking.paymentStatus !== "PAID" ||
+        booking.status === "COMPLETED"
+      );
+    case "COMPLETED":
+      return (
+        booking.paymentStatus !== "PAID" ||
+        !booking.isCheckedIn ||
+        !booking.isFullyStaffed ||
+        !["CONFIRMED", "COMPLETED"].includes(booking.status)
+      );
+    case "CANCELLED":
+      return booking.isCheckedIn || booking.status === "COMPLETED";
+    default:
+      return false;
   }
-  if (status === "PENDING" && booking.paymentStatus === "PAID") return true;
-  if (status === "CANCELLED" && booking.status === "COMPLETED") return true;
-  return false;
 }
 
 function createDraft(quantity = 1) {
@@ -292,16 +312,22 @@ export default function BookingPage() {
           </div>
         ) : (
           items.map((booking) => {
+            const workflowStatus = getBookingWorkflowStatus(booking);
+            const workflowLabel = getBookingWorkflowLabel(booking);
             const canEditAssignments =
-              booking.paymentStatus === "PAID" && booking.status !== "COMPLETED";
+              booking.paymentStatus === "PAID" &&
+              !["COMPLETED", "CANCELLED"].includes(booking.status);
             const canToggleCheckIn =
               booking.paymentStatus === "PAID" &&
-              (booking.status === "CONFIRMED" || booking.status === "COMPLETED");
+              booking.status === "CONFIRMED";
             const readyForCompletion =
               booking.paymentStatus === "PAID" &&
               booking.isCheckedIn &&
               booking.isFullyStaffed &&
               booking.status === "CONFIRMED";
+            const workflowHint = booking.isCheckedIn
+              ? "This guest is checked in now. Keep the booking in Confirmed until the service is finished, then switch to Completed."
+              : "Use Confirmed for paid and scheduled bookings. Move to Completed only after check-in and service finish.";
 
             return (
               <article
@@ -314,7 +340,10 @@ export default function BookingPage() {
                       <h2 className="text-2xl font-semibold text-stone-900">
                         {booking.bookingCode}
                       </h2>
-                      <StatusBadge value={booking.status} />
+                      <StatusBadge
+                        value={workflowStatus}
+                        labels={getBookingStatusBadgeLabels(booking)}
+                      />
                       <StatusBadge value={booking.paymentStatus} />
                     </div>
 
@@ -323,6 +352,12 @@ export default function BookingPage() {
                     </p>
                     <p className="mt-1 text-xs text-stone-400">
                       Created at {formatDateTime(booking.createdAt)}
+                    </p>
+                    <p className="mt-2 text-sm text-stone-500">
+                      Workflow stage:{" "}
+                      <span className="font-medium text-stone-700">
+                        {workflowLabel}
+                      </span>
                     </p>
 
                     {booking.isGroupBooking ? (
@@ -548,7 +583,7 @@ export default function BookingPage() {
                                           : "This service line is fully staffed."
                                         : booking.paymentStatus !== "PAID"
                                           ? "Payment must be confirmed before staffing can be edited."
-                                          : "Completed bookings cannot be changed."}
+                                          : "Completed or cancelled bookings cannot be changed."}
                                     </p>
                                   </div>
                                 </div>
@@ -568,7 +603,7 @@ export default function BookingPage() {
 
                     <div className="mt-5 space-y-3">
                       <label className="block text-sm font-semibold text-stone-900">
-                        Booking status
+                        Booking status action
                       </label>
                       <select
                         value={booking.status}
@@ -576,16 +611,17 @@ export default function BookingPage() {
                         disabled={busyKey === `status-${booking.id}`}
                         className="w-full rounded-2xl border border-stone-300 px-3 py-2.5 text-sm"
                       >
-                        {STATUS_OPTIONS.map((status) => (
+                        {STATUS_OPTIONS.map((option) => (
                           <option
-                            key={status}
-                            value={status}
-                            disabled={isStatusDisabled(booking, status)}
+                            key={option.value}
+                            value={option.value}
+                            disabled={isStatusDisabled(booking, option.value)}
                           >
-                            {status}
+                            {option.label}
                           </option>
                         ))}
                       </select>
+                      <p className="text-xs text-stone-500">{workflowHint}</p>
 
                       <AppButton
                         variant={booking.isCheckedIn ? "ghost" : "secondary"}
@@ -602,6 +638,12 @@ export default function BookingPage() {
 
                       <div className="rounded-2xl bg-stone-50 p-4 text-xs text-stone-600">
                         <p>Payment: {booking.paymentStatus}</p>
+                        <p className="mt-1">
+                          Workflow stage: {workflowLabel}
+                        </p>
+                        <p className="mt-1">
+                          Stored status: {booking.status}
+                        </p>
                         <p className="mt-1">
                           Check-in:{" "}
                           {booking.isCheckedIn

@@ -18,6 +18,11 @@ import StatusBadge from "../../components/shared/StatusBadge";
 import { useAuth } from "../../context/AuthContext";
 import { clearCart } from "../../utils/customerStorage";
 import {
+  getBookingStatusBadgeLabels,
+  getBookingWorkflowLabel,
+  getBookingWorkflowStatus,
+} from "../../utils/bookingStatus";
+import {
   formatCurrency,
   formatDate,
   formatDateTime,
@@ -438,6 +443,8 @@ export default function MyBookingsPage() {
         ) : (
           <div className="mt-10 space-y-5">
             {bookings.map((booking) => {
+              const workflowStatus = getBookingWorkflowStatus(booking);
+              const workflowLabel = getBookingWorkflowLabel(booking);
               const latestPayment = latestPayments[booking.id] || null;
               const selectedMethod = getSelectedMethod(booking);
               const canPay = booking.paymentStatus === "UNPAID";
@@ -510,13 +517,19 @@ export default function MyBookingsPage() {
                         </span>
                         <StatusBadge value={booking.paymentStatus} />
                         <span className="text-sm text-stone-500">
-                          booking status:
+                          booking stage:
                         </span>
-                        <StatusBadge value={booking.status} />
+                        <StatusBadge
+                          value={workflowStatus}
+                          labels={getBookingStatusBadgeLabels(booking)}
+                        />
                       </div>
 
                       <p className="mt-3 text-sm text-stone-600">
                         {booking.fullName} - {booking.phone} - {booking.email}
+                      </p>
+                      <p className="mt-2 text-sm text-stone-500">
+                        Current booking stage: {workflowLabel}
                       </p>
 
                       {booking.isGroupBooking ? (

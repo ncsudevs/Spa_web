@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
-import { UserCircle2, Search } from "lucide-react";
+import { Search, UserCircle2 } from "lucide-react";
 import {
-  getCustomers,
-  getCustomerById,
-  updateCustomer,
   deleteCustomer,
+  getCustomerById,
+  getCustomers,
+  updateCustomer,
 } from "../../api/customerApi";
 import AppButton from "../../components/app/AppButton";
 import PageHeader from "../../components/shared/PageHeader";
 import SectionCard from "../../components/shared/SectionCard";
+import StatusBadge from "../../components/shared/StatusBadge";
+import {
+  getBookingStatusBadgeLabels,
+  getBookingWorkflowLabel,
+  getBookingWorkflowStatus,
+} from "../../utils/bookingStatus";
 import { formatCurrency, formatDateTime } from "../../utils/formatters";
 
 export default function CustomersPage() {
@@ -64,6 +70,32 @@ export default function CustomersPage() {
     }
   }
 
+  async function handleDeleteCustomer(customer) {
+    if (!customer?.canDelete) return;
+
+    if (
+      !window.confirm(
+        `Delete customer ${customer.fullName} (${customer.email})? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      setDetailError("");
+      await deleteCustomer(customer.id);
+      setCustomers((current) => current.filter((item) => item.id !== customer.id));
+      if (selected?.id === customer.id) {
+        setSelected(null);
+      }
+    } catch (err) {
+      setDetailError(err.message || "Delete failed.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const filtered = customers.filter((c) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
@@ -107,7 +139,7 @@ export default function CustomersPage() {
             <div className="py-8 text-sm text-stone-500">No customers.</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px]">
+              <table className="w-full min-w-[900px]">
                 <thead className="border-b border-stone-200 text-left text-sm text-stone-500">
                   <tr>
                     <th className="p-3">Name</th>
@@ -146,13 +178,29 @@ export default function CustomersPage() {
                         </span>
                       </td>
                       <td className="p-3">
-                        <AppButton
-                          variant="ghost"
-                          className="px-3 py-2"
-                          onClick={() => loadDetail(c.id)}
-                        >
-                          View
-                        </AppButton>
+                        <div className="flex items-center gap-2">
+                          <AppButton
+                            variant="ghost"
+                            className="px-3 py-2"
+                            onClick={() => loadDetail(c.id)}
+                          >
+                            View
+                          </AppButton>
+                          <AppButton
+                            variant="danger"
+                            className="px-3 py-2"
+                            onClick={() => handleDeleteCustomer(c)}
+                            disabled={!c.canDelete || deleting}
+                            title={c.deleteBlockedReason || "Delete customer"}
+                          >
+                            Delete
+                          </AppButton>
+                        </div>
+                        {!c.canDelete ? (
+                          <p className="mt-2 text-xs text-amber-700">
+                            {c.deleteBlockedReason}
+                          </p>
+                        ) : null}
                       </td>
                     </tr>
                   ))}
@@ -235,25 +283,9 @@ export default function CustomersPage() {
                   <AppButton
                     variant="danger"
                     className="text-red-600 hover:bg-red-50"
-                    disabled={deleting}
-                    onClick={async () => {
-                      if (
-                        !confirm(
-                          "Delete this customer? Bookings must be empty.",
-                        )
-                      )
-                        return;
-                      try {
-                        setDeleting(true);
-                        await deleteCustomer(selected.id);
-                        setSelected(null);
-                        await load();
-                      } catch (err) {
-                        setDetailError(err.message || "Delete failed.");
-                      } finally {
-                        setDeleting(false);
-                      }
-                    }}
+                    disabled={deleting || !selected.canDelete}
+                    title={selected.deleteBlockedReason || "Delete customer"}
+                    onClick={() => handleDeleteCustomer(selected)}
                   >
                     {deleting ? "Deleting..." : "Delete customer"}
                   </AppButton>
@@ -261,25 +293,34 @@ export default function CustomersPage() {
                     Created: {formatDateTime(selected.createdAt)}
                   </p>
                 </div>
+                {!selected.canDelete ? (
+                  <p className="text-xs text-amber-700">
+                    {selected.deleteBlockedReason}
+                  </p>
+                ) : null}
               </div>
 
               <div>
                 <p className="text-sm font-semibold text-stone-800">Bookings</p>
                 {selected.bookings.length === 0 ? (
-                  <p className="text-sm text-stone-500 mt-2">No bookings.</p>
+                  <p className="mt-2 text-sm text-stone-500">No bookings.</p>
                 ) : (
                   <div className="mt-2 space-y-3">
                     {selected.bookings.map((b) => (
-                      <div
-                        key={b.id}
-                        className="rounded-2xl border border-stone-200 p-3"
-                      >
+                      <div key={b.id} className="rounded-2xl border border-stone-200 p-3">
+                        <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
+                          <StatusBadge
+                            value={getBookingWorkflowStatus(b)}
+                            labels={getBookingStatusBadgeLabels(b)}
+                          />
+                          <StatusBadge value={b.paymentStatus} />
+                        </div>
                         <div className="flex items-center gap-2 text-sm">
                           <span className="font-semibold text-stone-900">
                             {b.bookingCode}
                           </span>
                           <span className="text-xs text-stone-500">
-                            ({b.status} / {b.paymentStatus})
+                            ({getBookingWorkflowLabel(b)} / {b.paymentStatus})
                           </span>
                         </div>
                         <p className="text-xs text-stone-500">
@@ -288,12 +329,10 @@ export default function CustomersPage() {
                         <p className="text-sm text-stone-700">
                           {formatCurrency(b.totalAmount)}
                         </p>
-                        <div className="mt-2 text-xs text-stone-500 space-y-1">
+                        <div className="mt-2 space-y-1 text-xs text-stone-500">
                           {(b.items || []).map((it, idx) => (
                             <div key={idx}>
-                              {it.serviceName} •{" "}
-                              {formatDateTime(it.appointmentDate)}{" "}
-                              {it.appointmentTime}
+                              {`${it.serviceName} - ${formatDateTime(it.appointmentDate)} ${it.appointmentTime}`}
                             </div>
                           ))}
                         </div>
@@ -306,7 +345,7 @@ export default function CustomersPage() {
               <div>
                 <p className="text-sm font-semibold text-stone-800">Payments</p>
                 {selected.payments.length === 0 ? (
-                  <p className="text-sm text-stone-500 mt-2">No payments.</p>
+                  <p className="mt-2 text-sm text-stone-500">No payments.</p>
                 ) : (
                   <div className="mt-2 space-y-2">
                     {selected.payments.map((p) => (

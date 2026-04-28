@@ -7,6 +7,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { getBookings } from "../../api/bookingApi";
+import { getBookingWorkflowLabel } from "../../utils/bookingStatus";
 
 export default function MomoQrPage() {
   const location = useLocation();
@@ -150,7 +151,7 @@ export default function MomoQrPage() {
               <span className="font-semibold text-stone-900">
                 Booking status:
               </span>{" "}
-              {booking.status}
+              {getBookingWorkflowLabel(booking)}
             </p>
             <p className="mt-2">
               <span className="font-semibold text-stone-900">Customer:</span>{" "}

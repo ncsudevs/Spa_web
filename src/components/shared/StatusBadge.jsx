@@ -5,6 +5,7 @@ const toneMap = {
   PENDING: "bg-amber-100 text-amber-700",
   AWAITING_TRANSFER: "bg-orange-100 text-orange-700",
   CONFIRMED: "bg-sky-100 text-sky-700",
+  CHECKED_IN: "bg-cyan-100 text-cyan-700",
   COMPLETED: "bg-emerald-100 text-emerald-700",
   CANCELLED: "bg-red-100 text-red-700",
   PAID: "bg-emerald-100 text-emerald-700",
