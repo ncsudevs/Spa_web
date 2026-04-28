@@ -50,7 +50,11 @@ export default function BookingStatusPanel({
           onClick={() => onCheckInChange(booking, !booking.isCheckedIn)}
           disabled={!canToggleCheckIn || busyKey === `checkin-${booking.id}`}
         >
-          {booking.isCheckedIn ? "Undo check-in" : "Mark checked in"}
+          {booking.status === "COMPLETED"
+            ? "Booking completed"
+            : booking.isCheckedIn
+              ? "Undo check-in"
+              : "Check in and complete booking"}
         </AppButton>
 
         <div className="rounded-2xl bg-stone-50 p-4 text-xs text-stone-600">

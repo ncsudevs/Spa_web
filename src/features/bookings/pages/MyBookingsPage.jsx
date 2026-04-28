@@ -34,14 +34,14 @@ const paymentMethods = [
     label: "MoMo",
     icon: Wallet,
     description:
-      "Create a real MoMo sandbox payment session and continue to the hosted QR page.",
+      "Continue to the MoMo payment page and finish the payment there.",
   },
   {
     id: "BANK_TRANSFER",
     label: "Bank transfer",
     icon: Landmark,
     description:
-      "Transfer manually, then notify cashier so they can verify and confirm payment.",
+      "See the bank details, transfer manually, then notify cashier after sending it.",
   },
 ];
 
@@ -68,14 +68,14 @@ function buildReturnNotice(location) {
       ? {
           tone: "success",
           title: "MoMo payment finished",
-          description: `Booking ${bookingCode || "-"} returned from MoMo successfully. Payment ${paymentCode || "-"} is being refreshed.`,
+          description: `Booking ${bookingCode || "-"} returned from MoMo successfully. Payment ${paymentCode || "-"} is being refreshed now.`,
         }
       : {
           tone: "warning",
           title: "MoMo payment was not completed",
           description:
             resultMessage ||
-            `Booking ${bookingCode || "-"} returned from MoMo with result code ${resultCode}.`,
+            `Booking ${bookingCode || "-"} returned from MoMo with result code ${resultCode}. You can continue with MoMo or switch to bank transfer below.`,
         };
   }
 
@@ -187,15 +187,21 @@ function PaymentInstructionCard({
       </p>
 
       <div className="mt-4 flex flex-wrap gap-3">
-        {isMomo && hostedUrl ? (
+        {isMomo && isPending ? (
           <AppButton
             variant="secondary"
             onClick={() => {
-              window.location.href = hostedUrl;
+              if (hostedUrl) {
+                window.location.href = hostedUrl;
+                return;
+              }
+
+              onResumeMomo(booking);
             }}
+            disabled={creating || (!hostedUrl && !canRetryPending)}
           >
             <ExternalLink className="h-4 w-4" />
-            Continue to hosted MoMo page
+            {creating ? "Preparing MoMo payment..." : "Continue to payment with MoMo"}
           </AppButton>
         ) : null}
 
@@ -208,21 +214,17 @@ function PaymentInstructionCard({
             {confirming ? "Sending confirmation..." : "I have transferred, notify cashier"}
           </AppButton>
         ) : null}
-
-        {isMomo && isPending ? (
-          <AppButton
-            variant="ghost"
-            onClick={() => onResumeMomo(booking)}
-            disabled={creating || !canRetryPending}
-          >
-            {creating ? "Refreshing session..." : "Create a fresh MoMo session"}
-          </AppButton>
-        ) : null}
       </div>
 
       {!isMomo && isAwaitingTransfer ? (
         <p className="mt-3 text-sm text-amber-700">
           Transfer first, then press the confirmation button so cashier can review it.
+        </p>
+      ) : null}
+
+      {isMomo && isPending && !hostedUrl && !canRetryPending ? (
+        <p className="mt-3 text-sm text-amber-700">
+          This MoMo payment cannot be reopened anymore. You can switch to bank transfer below.
         </p>
       ) : null}
 
@@ -340,12 +342,12 @@ export default function MyBookingsPage() {
         tone: "success",
         title:
           method === "MOMO"
-            ? "MoMo payment session created"
+            ? "MoMo payment is ready"
             : "Bank transfer instruction created",
         description:
           method === "MOMO"
-            ? `Payment ${payment.paymentCode} is ready. Continue to the hosted MoMo page to scan the QR code.`
-            : `Payment ${payment.paymentCode} is ready. Transfer using the account info below, then confirm the transfer.`,
+            ? `Payment ${payment.paymentCode} is ready. Continue to MoMo to finish paying for this booking.`
+            : `Payment ${payment.paymentCode} is ready. Use the bank details below, then confirm after you have transferred.`,
       });
 
       await loadBookings();
@@ -422,9 +424,9 @@ export default function MyBookingsPage() {
           <p className="font-semibold text-stone-900">Payment status guide</p>
           <ul className="mt-3 space-y-2 text-sm text-stone-600">
             <li>UNPAID: no payment request has been created yet.</li>
-            <li>AWAITING_TRANSFER: bank transfer instruction is ready and waiting for your confirmation.</li>
+            <li>AWAITING_TRANSFER: bank transfer details are ready and waiting for your confirmation.</li>
             <li>PENDING: the payment is waiting for cashier review or MoMo completion.</li>
-            <li>PAID: payment was confirmed and the booking automatically becomes CONFIRMED.</li>
+            <li>PAID: payment was confirmed and your booking is scheduled.</li>
             <li>REJECTED: the payment request was rejected and you can create a new one.</li>
           </ul>
         </div>
@@ -457,6 +459,11 @@ export default function MyBookingsPage() {
               const isBankPending =
                 isAwaitingTransfer ||
                 (isPending && latestPayment?.method === "BANK_TRANSFER");
+              const latestPaymentHostedUrl =
+                latestPayment?.payUrl ||
+                latestPayment?.qrCodeUrl ||
+                latestPayment?.deepLink ||
+                "";
 
               const paymentAttempts = booking.paymentAttempts ?? 0;
               const canRetryPending = paymentAttempts < 3;
@@ -500,6 +507,15 @@ export default function MyBookingsPage() {
                 !isPaid &&
                 !isAwaitingTransfer &&
                 (!isPending || latestPayment?.method === "MOMO");
+              const showPaymentActions =
+                canPay || isRejected || isCancelled || isMomoPending;
+              const disablePrimaryPaymentAction =
+                creatingBookingId === booking.id ||
+                !canCreateNewPayment ||
+                (selectedMethod === "MOMO" &&
+                  isMomoPending &&
+                  !latestPaymentHostedUrl &&
+                  !canRetryPending);
 
               return (
                 <article
@@ -610,7 +626,7 @@ export default function MyBookingsPage() {
                         Created at {formatDateTime(booking.createdAt)}
                       </p>
 
-                      {canPay || isRejected || isCancelled ? (
+                      {showPaymentActions ? (
                         <div className="mt-4 space-y-3">
                           <p className="text-sm font-semibold text-stone-900">
                             Choose payment method
@@ -657,14 +673,31 @@ export default function MyBookingsPage() {
                           <AppButton
                             variant="secondary"
                             className="w-full rounded-full"
-                            onClick={() => handleCreatePayment(booking)}
-                            disabled={creatingBookingId === booking.id || !canCreateNewPayment}
+                            onClick={() => {
+                              if (
+                                selectedMethod === "MOMO" &&
+                                isMomoPending &&
+                                latestPaymentHostedUrl
+                              ) {
+                                window.location.href = latestPaymentHostedUrl;
+                                return;
+                              }
+
+                              handleCreatePayment(booking);
+                            }}
+                            disabled={disablePrimaryPaymentAction}
                           >
                             {creatingBookingId === booking.id
-                              ? "Creating request..."
+                              ? selectedMethod === "MOMO"
+                                ? "Preparing MoMo payment..."
+                                : "Preparing bank transfer..."
                               : selectedMethod === "MOMO"
-                                ? "Pay with MoMo"
-                                : "Create bank transfer instruction"}
+                                ? isMomoPending
+                                  ? "Continue to payment with MoMo"
+                                  : "Pay with MoMo"
+                                : isMomoPending
+                                  ? "Use bank transfer instead"
+                                  : "Show bank transfer details"}
                           </AppButton>
 
                           {!canCreateNewPayment ? (
@@ -674,67 +707,27 @@ export default function MyBookingsPage() {
                                 : isPaid
                                   ? "Payment is already complete."
                                   : isAwaitingTransfer
-                                    ? "Confirm the existing bank transfer before creating a new request."
-                                    : "Finish or refresh the current MoMo request first."}
+                                    ? "Your bank transfer details are already shown above."
+                                    : "This booking already has a payment waiting to be finished."}
                             </p>
                           ) : selectedMethod === "MOMO" ? (
                             <p className="text-xs text-stone-500">
-                              Attempts used: {paymentAttempts}/3.{" "}
-                              {countdown
-                                ? `MoMo session expires in ${countdown}.`
-                                : isTtlExpired
-                                  ? "Previous session expired; create a new payment to get a fresh QR."
-                                  : "A fresh QR will be created after you continue."}
+                              {!latestPaymentHostedUrl && !canRetryPending
+                                ? "MoMo could not be reopened anymore. You can switch to bank transfer instead."
+                                : isMomoPending
+                                  ? countdown
+                                    ? `If you closed MoMo or the browser, continue here to reopen payment. This session expires in ${countdown}.`
+                                    : isTtlExpired
+                                      ? "Your previous MoMo session has expired. Continue here to prepare a new one."
+                                      : "If you left MoMo before finishing, continue here to reopen payment."
+                                  : "You will be redirected to MoMo to finish your payment."}
                             </p>
                           ) : (
                             <p className="text-xs text-stone-500">
-                              We will create a transfer instruction and wait for you to confirm after sending the money.
+                              {isMomoPending
+                                ? "Prefer not to continue with MoMo? Switch to bank transfer and we will show the account details right away."
+                                : "We will show the bank transfer details after you continue."}
                             </p>
-                          )}
-                        </div>
-                      ) : isMomoPending ? (
-                        <div className="mt-4 space-y-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                          <p className="text-xs text-amber-700">
-                            Attempts used: {paymentAttempts}/3.
-                          </p>
-
-                          {isTtlExpired ? (
-                            <div className="rounded-2xl bg-white p-4 text-amber-800 shadow-sm ring-1 ring-amber-200">
-                              <p className="text-sm font-semibold">
-                                Payment session expired
-                              </p>
-                              <p className="mt-1 text-xs text-amber-700">
-                                The MoMo QR/session is only valid for 5 minutes. Create a new payment to get a fresh QR.
-                              </p>
-                              <AppButton
-                                variant="secondary"
-                                className="mt-3 rounded-full"
-                                onClick={() => handleCreatePayment(booking)}
-                                disabled={creatingBookingId === booking.id || !canRetryPending}
-                              >
-                                {creatingBookingId === booking.id
-                                  ? "Creating new session..."
-                                  : "Create new payment"}
-                              </AppButton>
-                            </div>
-                          ) : (
-                            <>
-                              <p className="text-xs font-semibold tracking-wide text-amber-700">
-                                {countdown
-                                  ? `MoMo session expires in ${countdown}.`
-                                  : "Session time remaining unknown. If payment fails, create a new one."}
-                              </p>
-                              <AppButton
-                                variant="secondary"
-                                className="rounded-full"
-                                onClick={() => handleCreatePayment(booking)}
-                                disabled={creatingBookingId === booking.id || !canRetryPending}
-                              >
-                                {creatingBookingId === booking.id
-                                  ? "Recreating session..."
-                                  : "Create new MoMo session"}
-                              </AppButton>
-                            </>
                           )}
                         </div>
                       ) : isBankPending ? (

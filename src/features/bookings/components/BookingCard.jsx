@@ -33,15 +33,18 @@ export default function BookingCard({
     !["COMPLETED", "CANCELLED"].includes(booking.status);
   const canToggleCheckIn =
     booking.paymentStatus === "PAID" &&
-    booking.status === "CONFIRMED";
+    booking.status === "CONFIRMED" &&
+    booking.isFullyStaffed;
   const readyForCompletion =
     booking.paymentStatus === "PAID" &&
-    booking.isCheckedIn &&
-    booking.isFullyStaffed &&
-    booking.status === "CONFIRMED";
-  const workflowHint = booking.isCheckedIn
-    ? "This guest is checked in now. Keep the booking in Confirmed until the service is finished, then switch to Completed."
-    : "Use Confirmed for paid and scheduled bookings. Move to Completed only after check-in and service finish.";
+    booking.status === "CONFIRMED" &&
+    booking.isFullyStaffed;
+  const workflowHint =
+    booking.status === "COMPLETED"
+      ? "This booking was completed during check-in."
+      : booking.status === "CONFIRMED" && !booking.isFullyStaffed
+        ? "Finish staffing before check-in can complete this booking."
+        : "Use Confirmed for paid and scheduled bookings. Check-in will complete the booking right away.";
 
   return (
     <article className="rounded-[28px] border border-stone-200 bg-white p-6 shadow-sm">

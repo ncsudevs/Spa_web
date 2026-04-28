@@ -1,4 +1,4 @@
-import { Wallet } from "lucide-react";
+import { Landmark, Wallet } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createPayment } from "../api/paymentApi";
@@ -12,7 +12,13 @@ const methods = [
     id: "MOMO",
     label: "MoMo",
     icon: Wallet,
-    description: "Create a payment request through the MoMo wallet.",
+    description: "Continue to the MoMo payment page and finish the payment there.",
+  },
+  {
+    id: "BANK_TRANSFER",
+    label: "Bank transfer",
+    icon: Landmark,
+    description: "See the bank details, transfer manually, then notify cashier after sending it.",
   },
 ];
 
@@ -119,7 +125,13 @@ export default function PaymentPage() {
             disabled={submitting}
             className="mt-8 inline-flex items-center justify-center rounded-full bg-stone-950 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting ? "Processing payment..." : "Confirm payment"}
+            {submitting
+              ? method === "MOMO"
+                ? "Preparing MoMo payment..."
+                : "Preparing bank transfer..."
+              : method === "MOMO"
+                ? "Pay with MoMo"
+                : "Show bank transfer details"}
           </button>
         </section>
 
