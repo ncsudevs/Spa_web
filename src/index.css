@@ -54,3 +54,13 @@ select {
   border-color: #fda4af;
   box-shadow: 0 0 0 4px rgba(244, 114, 182, 0.12);
 }
+
+.field[aria-invalid="true"],
+input[aria-invalid="true"],
+textarea[aria-invalid="true"],
+select[aria-invalid="true"],
+.flatpickr-input[aria-invalid="true"] {
+  border-color: #fb7185;
+  box-shadow: 0 0 0 4px rgba(251, 113, 133, 0.12);
+  background: #fff1f2;
+}

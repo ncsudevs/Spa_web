@@ -3,14 +3,14 @@ import {
   getMe,
   login as loginApi,
   register as registerApi,
-} from "../api/authApi";
+} from "../features/auth/api/authApi";
 import {
   clearAuth,
   getCurrentUser,
   getToken,
   isAuthenticated,
   saveAuth,
-} from "../utils/authStorage";
+} from "../shared/utils/authStorage";
 
 const AuthContext = createContext(null);
 

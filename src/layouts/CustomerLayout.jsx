@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
-import CustomerFooter from "../components/customer/CustomerFooter";
-import CustomerNav from "../components/customer/CustomerNav";
+import CustomerFooter from "../features/customer/components/CustomerFooter";
+import CustomerNav from "../features/customer/components/CustomerNav";
 
 export default function CustomerLayout() {
   return (
