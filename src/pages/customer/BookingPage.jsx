@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createBooking, getSlotAvailability } from "../../api/bookingApi";
-import { useAuth } from "../../context/AuthContext";
 import Field from "../../components/app/Field";
 import DatePicker from "../../components/app/DatePicker";
-import { formatDate } from "../../utils/formatters";
+import { useAuth } from "../../context/AuthContext";
+import { formatCurrency, formatDate } from "../../utils/formatters";
 import {
   clearSelectedBookingItems,
   getSelectedBookingItems,
@@ -18,7 +18,9 @@ const bookingTimeOptions = [
   "02:00 PM",
   "03:30 PM",
   "05:00 PM",
+  "06:30 PM",
 ];
+
 const PHONE_MAX_LENGTH = 15;
 
 const PHONE_REGIONS = [
@@ -29,6 +31,25 @@ const PHONE_REGIONS = [
 
 function normalizePhoneInput(value) {
   return value.replace(/\D/g, "").slice(0, PHONE_MAX_LENGTH);
+}
+
+function parseTimeToMinutes(value) {
+  if (!value) return null;
+
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) return null;
+
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = match[3]?.toUpperCase();
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  if (minutes < 0 || minutes > 59) return null;
+
+  if (ampm === "PM" && hours < 12) hours += 12;
+  if (ampm === "AM" && hours === 12) hours = 0;
+
+  return (hours % 24) * 60 + minutes;
 }
 
 function isPastDateIso(iso) {
@@ -78,15 +99,16 @@ function AvailabilityHint({ availability, quantity = 1 }) {
     0;
 
   const capacity = availability.slotCapacity ?? availability.capacity ?? 0;
-
   const enough = remaining >= quantity;
 
   return (
     <p
-      className={`mt-2 text-xs ${enough ? "text-emerald-600" : "text-rose-600"}`}
+      className={`mt-2 text-xs ${
+        enough ? "text-emerald-600" : "text-rose-600"
+      }`}
     >
       {remaining} / {capacity} slots left
-      {!enough ? ` — selected quantity needs ${quantity}` : ""}
+      {!enough ? ` - selected quantity needs ${quantity}` : ""}
     </p>
   );
 }
@@ -108,6 +130,27 @@ export default function BookingPage() {
     [selectedCart],
   );
 
+  const [bangkokNow, setBangkokNow] = useState(() => {
+    const now = new Date();
+    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+    return new Date(utc + 7 * 3600000);
+  });
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      setBangkokNow(new Date(utc + 7 * 3600000));
+    }, 60_000);
+
+    return () => clearInterval(id);
+  }, []);
+
+  const todayIso = useMemo(
+    () => bangkokNow.toISOString().split("T")[0],
+    [bangkokNow],
+  );
+
   const canUseGroupBooking =
     selectedCart.length === 1 && (selectedCart[0]?.quantity || 0) > 1;
 
@@ -115,6 +158,7 @@ export default function BookingPage() {
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     fullName: user?.fullName || "",
+    region: "VN",
     phone: normalizePhoneInput(user?.phone || ""),
     email: user?.email || "",
     note: "",
@@ -242,7 +286,7 @@ export default function BookingPage() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [bookingMode, appointments, bookingUnits]);
+  }, [appointments, bookingMode, bookingUnits]);
 
   useEffect(() => {
     if (
@@ -281,7 +325,7 @@ export default function BookingPage() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [bookingMode, groupServiceId, groupDate, groupTime, groupQuantity]);
+  }, [bookingMode, groupDate, groupQuantity, groupServiceId, groupTime]);
 
   const total = useMemo(
     () =>
@@ -291,6 +335,20 @@ export default function BookingPage() {
       ),
     [selectedCart],
   );
+
+  function isPastToday(time) {
+    const minutes = parseTimeToMinutes(time);
+    if (minutes == null) return false;
+    const nowMinutes = bangkokNow.getHours() * 60 + bangkokNow.getMinutes();
+    return minutes <= nowMinutes;
+  }
+
+  function pickTimeForDate(selectedDate, currentTime) {
+    if (!selectedDate) return currentTime || bookingTimeOptions[0];
+    if (selectedDate !== todayIso) return currentTime || bookingTimeOptions[0];
+    if (currentTime && !isPastToday(currentTime)) return currentTime;
+    return bookingTimeOptions.find((time) => !isPastToday(time)) || currentTime;
+  }
 
   function updateAppointment(key, field, value) {
     setAppointments((prev) => ({
@@ -303,14 +361,23 @@ export default function BookingPage() {
   }
 
   function updateAppointmentDateDisplay(key, iso) {
-    setAppointments((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        displayDate: formatDate(iso),
-        date: iso,
-      },
-    }));
+    setAppointments((prev) => {
+      const current = prev[key] || {
+        date: "",
+        displayDate: "",
+        time: bookingTimeOptions[0],
+      };
+
+      return {
+        ...prev,
+        [key]: {
+          ...current,
+          displayDate: formatDate(iso),
+          date: iso,
+          time: pickTimeForDate(iso, current.time),
+        },
+      };
+    });
   }
 
   function updateGroupDate(iso) {
@@ -318,6 +385,7 @@ export default function BookingPage() {
       ...prev,
       displayDate: formatDate(iso),
       date: iso,
+      time: pickTimeForDate(iso, prev.time),
     }));
   }
 
@@ -333,6 +401,10 @@ export default function BookingPage() {
 
       if (isPastDateIso(current.date)) {
         return `Appointment date for ${item.serviceName} cannot be in the past.`;
+      }
+
+      if (current.date === todayIso && isPastToday(current.time)) {
+        return `Appointment time for ${item.serviceName} must be in the future.`;
       }
 
       const slotKey = `${current.date}__${current.time}`;
@@ -369,8 +441,13 @@ export default function BookingPage() {
       return "Please choose the shared appointment date and time for your group.";
     }
 
-    if (isPastDateIso(groupSchedule.date))
+    if (isPastDateIso(groupSchedule.date)) {
       return "Group booking date cannot be in the past.";
+    }
+
+    if (groupSchedule.date === todayIso && isPastToday(groupSchedule.time)) {
+      return "Group booking time must be in the future.";
+    }
 
     if (!groupAvailability) {
       return "Please wait a moment for slot availability to load.";
@@ -405,6 +482,7 @@ export default function BookingPage() {
 
     try {
       setSubmitting(true);
+
       const payload = {
         fullName: form.fullName.trim(),
         phone: normalizePhoneInput(form.phone),
@@ -430,6 +508,7 @@ export default function BookingPage() {
                 appointmentTime: appointments[item.key].time,
               })),
       };
+
       const booking = await createBooking(payload);
       clearSelectedBookingItems();
       navigate("/my-bookings", {
@@ -445,8 +524,6 @@ export default function BookingPage() {
     }
   }
 
-  // const today = new Date().toISOString().split("T")[0];
-
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
@@ -458,11 +535,11 @@ export default function BookingPage() {
             Complete your appointment details
           </h1>
 
-          {error && (
+          {error ? (
             <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {error}
             </div>
-          )}
+          ) : null}
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
             <div className="grid gap-5 md:grid-cols-2">
@@ -476,6 +553,7 @@ export default function BookingPage() {
                   }
                 />
               </Field>
+
               <Field label="Phone number">
                 <div className="flex flex-col gap-3">
                   <select
@@ -577,13 +655,12 @@ export default function BookingPage() {
                         {selectedCart[0]?.service.name}
                       </h3>
                       <p className="text-sm text-stone-500">
-                        Group size: {selectedCart[0]?.quantity} people •
-                        Capacity per slot:{" "}
-                        {selectedCart[0]?.service.slotCapacity || 5}
+                        Group size: {selectedCart[0]?.quantity} people - Capacity
+                        per slot: {selectedCart[0]?.service.slotCapacity || 5}
                       </p>
                     </div>
                     <p className="text-sm font-semibold text-rose-500">
-                      ${selectedCart[0]?.service.price} each
+                      {formatCurrency(selectedCart[0]?.service.price)} each
                     </p>
                   </div>
 
@@ -592,6 +669,8 @@ export default function BookingPage() {
                       <DatePicker
                         value={groupSchedule.date}
                         onChange={updateGroupDate}
+                        minDate={todayIso}
+                        maxDate={null}
                       />
                     </Field>
 
@@ -606,11 +685,16 @@ export default function BookingPage() {
                           }))
                         }
                       >
-                        {bookingTimeOptions.map((time) => (
-                          <option key={time} value={time}>
-                            {time}
-                          </option>
-                        ))}
+                        {bookingTimeOptions.map((time) => {
+                          const disable =
+                            groupSchedule.date === todayIso && isPastToday(time);
+
+                          return (
+                            <option key={time} value={time} disabled={disable}>
+                              {time} {disable ? "(Closed)" : ""}
+                            </option>
+                          );
+                        })}
                       </select>
                     </Field>
                   </div>
@@ -641,30 +725,28 @@ export default function BookingPage() {
                             {item.serviceName}
                           </h3>
                           <p className="text-sm text-stone-500">
-                            {item.duration} min • {item.categoryName} • Capacity
+                            {item.duration} min - {item.categoryName} - Capacity
                             per slot: {item.slotCapacity}
                           </p>
                         </div>
                         <p className="text-sm font-semibold text-rose-500">
-                          {item.price} VND
+                          {formatCurrency(item.price)}
                         </p>
                       </div>
 
                       <div className="grid gap-5 md:grid-cols-2">
-                        <Field
-                          label={`Appointment date — ${item.baseServiceName}`}
-                        >
+                        <Field label={`Appointment date - ${item.baseServiceName}`}>
                           <DatePicker
                             value={appointments[item.key]?.date}
                             onChange={(iso) =>
                               updateAppointmentDateDisplay(item.key, iso)
                             }
+                            minDate={todayIso}
+                            maxDate={null}
                           />
                         </Field>
 
-                        <Field
-                          label={`Preferred time — ${item.baseServiceName}`}
-                        >
+                        <Field label={`Preferred time - ${item.baseServiceName}`}>
                           <select
                             className="field"
                             value={
@@ -679,11 +761,21 @@ export default function BookingPage() {
                               )
                             }
                           >
-                            {bookingTimeOptions.map((time) => (
-                              <option key={time} value={time}>
-                                {time}
-                              </option>
-                            ))}
+                            {bookingTimeOptions.map((time) => {
+                              const disable =
+                                appointments[item.key]?.date === todayIso &&
+                                isPastToday(time);
+
+                              return (
+                                <option
+                                  key={time}
+                                  value={time}
+                                  disabled={disable}
+                                >
+                                  {time} {disable ? "(Closed)" : ""}
+                                </option>
+                              );
+                            })}
                           </select>
                         </Field>
                       </div>
@@ -749,14 +841,14 @@ export default function BookingPage() {
                       <div>
                         <p className="font-medium text-white">{name}</p>
                         <p className="mt-1 text-xs text-stone-400">
-                          {duration} min • {quantity} x {price} VND
+                          {duration} min - {quantity} x {formatCurrency(price)}
                         </p>
                         <p className="mt-2 text-xs text-stone-400">
-                          {date || "Select date"} • {time || "Select time"}
+                          {date || "Select date"} - {time || "Select time"}
                         </p>
                       </div>
                       <span className="font-semibold text-white">
-                        {price * quantity} VND
+                        {formatCurrency(price * quantity)}
                       </span>
                     </div>
                   </div>
@@ -768,7 +860,7 @@ export default function BookingPage() {
           <div className="mt-6 border-t border-white/10 pt-6">
             <div className="flex items-center justify-between text-xl font-semibold text-white">
               <span>Total</span>
-              <span>{total} VND</span>
+              <span>{formatCurrency(total)}</span>
             </div>
           </div>
         </aside>

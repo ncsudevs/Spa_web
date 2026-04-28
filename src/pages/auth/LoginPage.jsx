@@ -16,7 +16,7 @@ export default function LoginPage() {
       setSubmitting(true);
       setError("");
       const data = await login(form);
-      const destination = data.user.role === "ADMIN"
+      const destination = ["ADMIN", "CASHIER"].includes(data.user.role)
         ? "/admin/dashboard"
         : location.state?.from || "/";
       navigate(destination, { replace: true });
@@ -70,6 +70,9 @@ export default function LoginPage() {
           <p className="font-semibold text-stone-900">Default admin account</p>
           <p>Email: admin@suspa.local</p>
           <p>Password: Admin@123</p>
+          <p className="mt-3 font-semibold text-stone-900">Default cashier account</p>
+          <p>Email: cashier@suspa.local</p>
+          <p>Password: Cashier@123</p>
         </div>
       </div>
     </div>

@@ -3,19 +3,20 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const menu = [
-  { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/admin/service-categories", label: "Service Categories", icon: Tags },
-  { to: "/admin/services", label: "Services", icon: Scissors },
-  { to: "/admin/customers", label: "Customers", icon: Users },
-  { to: "/admin/staff", label: "Staff", icon: UserRound },
-  { to: "/admin/bookings", label: "Bookings", icon: CalendarCheck2 },
-  { to: "/admin/payments", label: "Payments", icon: CreditCard },
-  { to: "/admin/logs", label: "Logs", icon: FileText },
+  { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "CASHIER"] },
+  { to: "/admin/service-categories", label: "Service Categories", icon: Tags, roles: ["ADMIN"] },
+  { to: "/admin/services", label: "Services", icon: Scissors, roles: ["ADMIN"] },
+  { to: "/admin/customers", label: "Customers", icon: Users, roles: ["ADMIN"] },
+  { to: "/admin/staff", label: "Staff", icon: UserRound, roles: ["ADMIN"] },
+  { to: "/admin/bookings", label: "Bookings", icon: CalendarCheck2, roles: ["ADMIN", "CASHIER"] },
+  { to: "/admin/payments", label: "Payments", icon: CreditCard, roles: ["ADMIN", "CASHIER"] },
+  { to: "/admin/logs", label: "Logs", icon: FileText, roles: ["ADMIN"] },
 ];
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const visibleMenu = menu.filter((item) => item.roles.includes(user?.role));
 
   return (
     <aside className="flex min-h-screen w-72 flex-col border-r border-stone-800 bg-stone-950 px-5 py-6 text-stone-200">
@@ -30,7 +31,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="space-y-2">
-        {menu.map((m) => {
+        {visibleMenu.map((m) => {
           const Icon = m.icon;
           return (
             <NavLink

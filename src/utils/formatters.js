@@ -47,5 +47,5 @@ export function formatDateTime(value) {
 
 export function formatCurrency(value) {
   const amount = Number(value || 0);
-  return `${amount.toLocaleString("vi-VN", { maximumFractionDigits: 0 })} Đ`;
+  return `${amount.toLocaleString("vi-VN", { maximumFractionDigits: 0 })} VND`;
 }

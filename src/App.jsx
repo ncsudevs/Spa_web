@@ -69,20 +69,76 @@ function App() {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute roles={["ADMIN"]}>
+          <ProtectedRoute roles={["ADMIN", "CASHIER"]}>
             <AdminLayout />
           </ProtectedRoute>
         }
       >
         <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="service-categories" element={<ServiceCategoryPage />} />
-        <Route path="services" element={<ServicePage />} />
-        <Route path="staff" element={<StaffPage />} />
-        <Route path="bookings" element={<BookingAdminPage />} />
-        <Route path="payments" element={<PaymentAdminPage />} />
-        <Route path="customers" element={<CustomersPage />} />
-        <Route path="logs" element={<LogsPage />} />
+        <Route
+          path="dashboard"
+          element={
+            <ProtectedRoute roles={["ADMIN", "CASHIER"]}>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="service-categories"
+          element={
+            <ProtectedRoute roles={["ADMIN"]}>
+              <ServiceCategoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="services"
+          element={
+            <ProtectedRoute roles={["ADMIN"]}>
+              <ServicePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="staff"
+          element={
+            <ProtectedRoute roles={["ADMIN"]}>
+              <StaffPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="bookings"
+          element={
+            <ProtectedRoute roles={["ADMIN", "CASHIER"]}>
+              <BookingAdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="payments"
+          element={
+            <ProtectedRoute roles={["ADMIN", "CASHIER"]}>
+              <PaymentAdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="customers"
+          element={
+            <ProtectedRoute roles={["ADMIN"]}>
+              <CustomersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="logs"
+          element={
+            <ProtectedRoute roles={["ADMIN"]}>
+              <LogsPage />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

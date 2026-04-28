@@ -16,3 +16,7 @@ export function updateCustomer(id, payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function deleteCustomer(id) {
+  return http(`${BASE}/${id}`, { method: "DELETE" });
+}

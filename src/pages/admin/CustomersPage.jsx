@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { UserCircle2, Search } from "lucide-react";
-import { getCustomers, getCustomerById, updateCustomer } from "../../api/customerApi";
+import {
+  getCustomers,
+  getCustomerById,
+  updateCustomer,
+  deleteCustomer,
+} from "../../api/customerApi";
 import AppButton from "../../components/app/AppButton";
 import PageHeader from "../../components/shared/PageHeader";
 import SectionCard from "../../components/shared/SectionCard";
@@ -14,8 +19,14 @@ export default function CustomersPage() {
   const [selected, setSelected] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
-  const [editForm, setEditForm] = useState({ fullName: "", phone: "", region: "VN", isActive: true });
+  const [editForm, setEditForm] = useState({
+    fullName: "",
+    phone: "",
+    region: "VN",
+    isActive: true,
+  });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     load().catch(() => {});
@@ -111,16 +122,24 @@ export default function CustomersPage() {
                   {filtered.map((c, idx) => (
                     <tr
                       key={c.id}
-                      className={idx !== filtered.length - 1 ? "border-b border-stone-100" : ""}
+                      className={
+                        idx !== filtered.length - 1
+                          ? "border-b border-stone-100"
+                          : ""
+                      }
                     >
-                      <td className="p-3 font-medium text-stone-900">{c.fullName}</td>
+                      <td className="p-3 font-medium text-stone-900">
+                        {c.fullName}
+                      </td>
                       <td className="p-3 text-stone-600">{c.email}</td>
                       <td className="p-3 text-stone-600">{c.phone || "-"}</td>
                       <td className="p-3 text-stone-600">{c.bookingCount}</td>
                       <td className="p-3 text-sm">
                         <span
                           className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            c.isActive ? "bg-emerald-50 text-emerald-700" : "bg-stone-100 text-stone-600"
+                            c.isActive
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-stone-100 text-stone-600"
                           }`}
                         >
                           {c.isActive ? "ACTIVE" : "INACTIVE"}
@@ -156,7 +175,9 @@ export default function CustomersPage() {
           ) : (
             <div className="space-y-6">
               <div className="space-y-2">
-                <p className="text-lg font-semibold text-stone-900">Edit customer</p>
+                <p className="text-lg font-semibold text-stone-900">
+                  Edit customer
+                </p>
                 <p className="text-sm text-stone-600">{selected.email}</p>
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="text-sm text-stone-600">
@@ -164,7 +185,9 @@ export default function CustomersPage() {
                     <input
                       className="field mt-1"
                       value={editForm.fullName}
-                      onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, fullName: e.target.value })
+                      }
                     />
                   </label>
                   <label className="text-sm text-stone-600">
@@ -172,7 +195,9 @@ export default function CustomersPage() {
                     <input
                       className="field mt-1"
                       value={editForm.phone}
-                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, phone: e.target.value })
+                      }
                       placeholder="+8490xxxxxxx"
                     />
                   </label>
@@ -181,13 +206,16 @@ export default function CustomersPage() {
                       type="checkbox"
                       className="h-4 w-4"
                       checked={editForm.isActive}
-                      onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, isActive: e.target.checked })
+                      }
                     />
                     Active
                   </label>
                 </div>
                 <div className="flex items-center gap-3">
                   <AppButton
+                    variant="blue"
                     onClick={async () => {
                       try {
                         setSaving(true);
@@ -204,6 +232,31 @@ export default function CustomersPage() {
                   >
                     {saving ? "Saving..." : "Save changes"}
                   </AppButton>
+                  <AppButton
+                    variant="danger"
+                    className="text-red-600 hover:bg-red-50"
+                    disabled={deleting}
+                    onClick={async () => {
+                      if (
+                        !confirm(
+                          "Delete this customer? Bookings must be empty.",
+                        )
+                      )
+                        return;
+                      try {
+                        setDeleting(true);
+                        await deleteCustomer(selected.id);
+                        setSelected(null);
+                        await load();
+                      } catch (err) {
+                        setDetailError(err.message || "Delete failed.");
+                      } finally {
+                        setDeleting(false);
+                      }
+                    }}
+                  >
+                    {deleting ? "Deleting..." : "Delete customer"}
+                  </AppButton>
                   <p className="text-xs text-stone-500">
                     Created: {formatDateTime(selected.createdAt)}
                   </p>
@@ -217,10 +270,17 @@ export default function CustomersPage() {
                 ) : (
                   <div className="mt-2 space-y-3">
                     {selected.bookings.map((b) => (
-                      <div key={b.id} className="rounded-2xl border border-stone-200 p-3">
+                      <div
+                        key={b.id}
+                        className="rounded-2xl border border-stone-200 p-3"
+                      >
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="font-semibold text-stone-900">{b.bookingCode}</span>
-                          <span className="text-xs text-stone-500">({b.status} / {b.paymentStatus})</span>
+                          <span className="font-semibold text-stone-900">
+                            {b.bookingCode}
+                          </span>
+                          <span className="text-xs text-stone-500">
+                            ({b.status} / {b.paymentStatus})
+                          </span>
                         </div>
                         <p className="text-xs text-stone-500">
                           {formatDateTime(b.createdAt)}
@@ -231,7 +291,9 @@ export default function CustomersPage() {
                         <div className="mt-2 text-xs text-stone-500 space-y-1">
                           {(b.items || []).map((it, idx) => (
                             <div key={idx}>
-                              {it.serviceName} • {formatDateTime(it.appointmentDate)} {it.appointmentTime}
+                              {it.serviceName} •{" "}
+                              {formatDateTime(it.appointmentDate)}{" "}
+                              {it.appointmentTime}
                             </div>
                           ))}
                         </div>
@@ -248,15 +310,24 @@ export default function CustomersPage() {
                 ) : (
                   <div className="mt-2 space-y-2">
                     {selected.payments.map((p) => (
-                      <div key={p.id} className="rounded-xl border border-stone-200 p-3 text-sm">
+                      <div
+                        key={p.id}
+                        className="rounded-xl border border-stone-200 p-3 text-sm"
+                      >
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-stone-900">{p.paymentCode}</span>
-                          <span className="text-xs text-stone-500">{p.status}</span>
+                          <span className="font-semibold text-stone-900">
+                            {p.paymentCode}
+                          </span>
+                          <span className="text-xs text-stone-500">
+                            {p.status}
+                          </span>
                         </div>
                         <p className="text-xs text-stone-500">
                           {formatDateTime(p.paidAt)}
                         </p>
-                        <p className="text-sm text-rose-600">{formatCurrency(p.amount)}</p>
+                        <p className="text-sm text-rose-600">
+                          {formatCurrency(p.amount)}
+                        </p>
                         <p className="text-xs text-stone-500">
                           Booking: {p.bookingCode || "-"}
                         </p>

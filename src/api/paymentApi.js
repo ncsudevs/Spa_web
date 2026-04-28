@@ -10,10 +10,20 @@ export function getPaymentById(id) {
   return http(`${BASE}/${id}`);
 }
 
+export function getLatestPaymentForBooking(bookingId) {
+  return http(`${BASE}/booking/${bookingId}/latest`);
+}
+
 export function createPayment(payload) {
   return http(BASE, {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export function confirmBankTransfer(id) {
+  return http(`${BASE}/${id}/confirm-transfer`, {
+    method: "PATCH",
   });
 }
 
