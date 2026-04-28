@@ -10,6 +10,7 @@ import AppButton from "../../../shared/components/AppButton";
 import EmptyState from "../../../shared/components/EmptyState";
 import PageHeader from "../../../shared/components/PageHeader";
 import SectionCard from "../../../shared/components/SectionCard";
+import TableScrollFrame from "../../../shared/components/TableScrollFrame";
 import { useStaff } from "../../staff/hooks/useStaff";
 import { useServiceCategories } from "../../services/hooks/useServiceCategories";
 
@@ -119,7 +120,7 @@ export default function StaffPage() {
       <PageHeader
         eyebrow="Admin"
         title="Staff / Therapists"
-        description="Manage therapists/technicians and their availability capacity."
+        description="Manage therapists, contact details, and the service categories each person can handle."
         actions={
           <AppButton onClick={openCreate}>
             <Plus size={18} /> Add staff
@@ -177,7 +178,10 @@ export default function StaffPage() {
         </AppButton>
       </div>
 
-      <SectionCard title="Staff list" description="Assign staff to bookings later; ensure they are active.">
+      <SectionCard
+        title="Staff list"
+        description="Keep staff details current so assignment and scheduling stay accurate."
+      >
         {loading ? (
           <div className="py-8 text-sm text-stone-500">Loading staff...</div>
         ) : items.length === 0 ? (
@@ -192,7 +196,7 @@ export default function StaffPage() {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
+          <TableScrollFrame scrollAreaClassName="overflow-x-auto">
             <table className="w-full min-w-[860px]">
               <thead className="border-b border-stone-200 text-left text-sm text-stone-500">
                 <tr>
@@ -293,126 +297,130 @@ export default function StaffPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScrollFrame>
         )}
       </SectionCard>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center sm:p-4">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-xl rounded-3xl bg-white p-8 shadow-2xl"
+            className="flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl"
           >
-            <h2 className="text-2xl font-semibold text-stone-900">
-              {editingId ? "Edit staff" : "Add staff"}
-            </h2>
-            <p className="mt-1 text-sm text-stone-500">
-              Active staff can be auto-assigned to bookings after payment.
-            </p>
-
-            <label className="mt-5 block text-sm text-stone-700">
-              <span className="mb-2 block font-medium">Full name</span>
-              <input
-                className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                value={form.fullName}
-                onChange={(e) => updateField("fullName", e.target.value)}
-              />
-            </label>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-stone-700">
-                <span className="mb-2 block font-medium">Email</span>
-                <input
-                  type="email"
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                  value={form.email}
-                  onChange={(e) => updateField("email", e.target.value)}
-                />
-              </label>
-              <label className="text-sm text-stone-700">
-                <span className="mb-2 block font-medium">Phone</span>
-                <input
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                  value={form.phone}
-                  onChange={(e) => updateField("phone", e.target.value)}
-                />
-              </label>
+            <div className="border-b border-stone-200 px-5 py-4 sm:px-8 sm:py-6">
+              <h2 className="text-xl font-semibold text-stone-900 sm:text-2xl">
+                {editingId ? "Edit staff" : "Add staff"}
+              </h2>
+              <p className="mt-1 text-sm text-stone-500">
+                Active staff can be assigned to upcoming bookings.
+              </p>
             </div>
 
-            <label className="mt-4 block text-sm text-stone-700">
-              <span className="mb-2 block font-medium">Service categories</span>
-              <div className="rounded-xl border border-stone-200 p-3">
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((c) => {
-                    const selected = form.categoryIds.includes(c.id);
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => {
-                          updateField(
-                            "categoryIds",
-                            selected
-                              ? form.categoryIds.filter((id) => id !== c.id)
-                              : [...form.categoryIds, c.id],
-                          );
-                        }}
-                        className={`rounded-full px-3 py-1 text-sm ${
-                          selected
-                            ? "bg-rose-100 text-rose-700 border border-rose-200"
-                            : "bg-stone-100 text-stone-600"
-                        }`}
-                      >
-                        {c.name}
-                      </button>
-                    );
-                  })}
-                </div>
-                {categories.length === 0 ? (
-                  <p className="text-xs text-stone-500 mt-2">
-                    No categories yet. Create categories first.
-                  </p>
-                ) : (
-                  <p className="text-xs text-stone-500 mt-2">
-                    Pick categories this staff can handle. Auto-assign will use these.
-                  </p>
-                )}
+            <div className="overflow-y-auto px-5 py-4 sm:px-8 sm:py-6">
+              <label className="block text-sm text-stone-700">
+                <span className="mb-2 block font-medium">Full name</span>
+                <input
+                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                  value={form.fullName}
+                  onChange={(e) => updateField("fullName", e.target.value)}
+                />
+              </label>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <label className="text-sm text-stone-700">
+                  <span className="mb-2 block font-medium">Email</span>
+                  <input
+                    type="email"
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                    value={form.email}
+                    onChange={(e) => updateField("email", e.target.value)}
+                  />
+                </label>
+                <label className="text-sm text-stone-700">
+                  <span className="mb-2 block font-medium">Phone</span>
+                  <input
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                    value={form.phone}
+                    onChange={(e) => updateField("phone", e.target.value)}
+                  />
+                </label>
               </div>
-            </label>
 
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-stone-700">
-                <span className="mb-2 block font-medium">Max concurrent</span>
-                <input
-                  type="number"
-                  min="1"
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                  value={form.maxConcurrent}
-                  onChange={(e) =>
-                    updateField("maxConcurrent", e.target.value)
-                  }
-                />
+              <label className="mt-4 block text-sm text-stone-700">
+                <span className="mb-2 block font-medium">Service categories</span>
+                <div className="rounded-xl border border-stone-200 p-3">
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((c) => {
+                      const selected = form.categoryIds.includes(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            updateField(
+                              "categoryIds",
+                              selected
+                                ? form.categoryIds.filter((id) => id !== c.id)
+                                : [...form.categoryIds, c.id],
+                            );
+                          }}
+                          className={`rounded-full px-3 py-1 text-sm ${
+                            selected
+                              ? "border border-rose-200 bg-rose-100 text-rose-700"
+                              : "bg-stone-100 text-stone-600"
+                          }`}
+                        >
+                          {c.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {categories.length === 0 ? (
+                    <p className="mt-2 text-xs text-stone-500">
+                      No categories yet. Create categories first.
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-xs text-stone-500">
+                      Choose the service groups this person can cover.
+                    </p>
+                  )}
+                </div>
               </label>
-              <label className="text-sm text-stone-700">
-                <span className="mb-2 block font-medium">Status</span>
-                <select
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                  value={form.isActive ? "ACTIVE" : "INACTIVE"}
-                  onChange={(e) =>
-                    updateField("isActive", e.target.value === "ACTIVE")
-                  }
-                >
-                  <option value="ACTIVE">ACTIVE</option>
-                  <option value="INACTIVE">INACTIVE</option>
-                </select>
-              </label>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <label className="text-sm text-stone-700">
+                  <span className="mb-2 block font-medium">Max concurrent</span>
+                  <input
+                    type="number"
+                    min="1"
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                    value={form.maxConcurrent}
+                    onChange={(e) =>
+                      updateField("maxConcurrent", e.target.value)
+                    }
+                  />
+                </label>
+                <label className="text-sm text-stone-700">
+                  <span className="mb-2 block font-medium">Status</span>
+                  <select
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                    value={form.isActive ? "ACTIVE" : "INACTIVE"}
+                    onChange={(e) =>
+                      updateField("isActive", e.target.value === "ACTIVE")
+                    }
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                  </select>
+                </label>
+              </div>
+
+              {error ? (
+                <p className="mt-4 text-sm text-red-600">{error}</p>
+              ) : null}
             </div>
 
-            {error ? (
-              <p className="mt-4 text-sm text-red-600">{error}</p>
-            ) : null}
-
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="flex flex-col-reverse gap-3 border-t border-stone-200 px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
               <AppButton type="button" variant="ghost" onClick={closeModal}>
                 Cancel
               </AppButton>

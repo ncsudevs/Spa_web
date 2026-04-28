@@ -37,7 +37,7 @@ export default function ServicesPage() {
         <PageHeader
           eyebrow="Services"
           title="Find your perfect treatment"
-          description="Customer pages now consume the same service hook and mapper, and only ACTIVE services can appear here."
+          description="Browse the treatments currently available and choose the one that fits your day."
         />
 
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -107,7 +107,7 @@ export default function ServicesPage() {
           <EmptyState
             icon={Sparkles}
             title="No services matched your search"
-            description="Try another keyword or switch to a different category. Hidden services stay invisible here until an admin sets them back to ACTIVE."
+            description="Try another keyword or choose a different category to explore more treatments."
           />
         </div>
       )}

@@ -1,4 +1,12 @@
-import { LogOut, Menu, ShoppingBag, Sparkles, User } from "lucide-react";
+import {
+  ArrowUpRight,
+  LogOut,
+  Menu,
+  ShoppingBag,
+  Sparkles,
+  User,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/useAuth";
@@ -39,98 +47,196 @@ export default function CustomerNav() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-rose-100 bg-white/85 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-2 text-xl font-semibold text-stone-900">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-            <Sparkles className="h-5 w-5" />
-          </span>
-          <span>SuSpa</span>
-        </Link>
-
-        <nav className="hidden items-center gap-8 md:flex">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                `text-sm font-medium transition ${
-                  isActive ? "text-rose-600" : "text-stone-600 hover:text-stone-900"
-                }`
-              }
+    <header className="sticky top-0 z-50 px-3 pt-3 sm:px-5 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="glass-card relative overflow-hidden rounded-[32px] border border-white/60 px-4 py-3 sm:px-6">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent" />
+          <div className="flex items-center justify-between gap-3">
+            <Link
+              to="/"
+              className="group flex min-w-0 items-center gap-3 text-stone-900"
             >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+              <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-[linear-gradient(145deg,#2f201d,#6d2d3d_58%,#e09a67)] text-white shadow-[0_14px_34px_rgba(77,38,31,0.24)]">
+                <span className="absolute inset-[1px] rounded-[17px] border border-white/20" />
+                <Sparkles className="relative h-5 w-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="font-display block truncate text-[1.4rem] leading-none">
+                  SuSpa
+                </span>
+                <span className="mt-1 block truncate text-[11px] font-semibold uppercase tracking-[0.28em] text-stone-500">
+                  Signature Calm Rituals
+                </span>
+              </span>
+            </Link>
 
-        <div className="flex items-center gap-3">
-          {isAuthenticated ? (
-            <div className="hidden items-center gap-3 md:flex">
-              <div className="rounded-full border border-stone-200 px-4 py-2 text-sm text-stone-700">
-                <span className="font-semibold">{user?.fullName}</span>
+            <nav className="hidden items-center md:flex">
+              <div className="rounded-full border border-stone-200/70 bg-white/65 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                <div className="flex items-center gap-1">
+                  {navItems.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      className={({ isActive }) =>
+                        `rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                          isActive
+                            ? "bg-stone-950 text-white shadow-lg"
+                            : "text-stone-600 hover:bg-rose-50 hover:text-rose-700"
+                        }`
+                      }
+                    >
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
               </div>
-              {user?.role === "ADMIN" && (
-                <Link to="/admin/dashboard" className="text-sm font-semibold text-rose-600">
-                  Admin
-                </Link>
+            </nav>
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              {isAuthenticated ? (
+                <div className="hidden items-center gap-3 lg:flex">
+                  <div className="rounded-full border border-stone-200/70 bg-white/65 px-4 py-2 text-sm text-stone-700">
+                    <span className="text-stone-500">Hello, </span>
+                    <span className="font-semibold">{user?.fullName}</span>
+                  </div>
+                  {user?.role === "ADMIN" && (
+                    <Link
+                      to="/admin/dashboard"
+                      className="inline-flex items-center gap-2 rounded-full border border-stone-200/70 bg-white/70 px-4 py-2 text-sm font-semibold text-stone-800 transition hover:border-rose-200 hover:text-rose-700"
+                    >
+                      Admin
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-200/70 bg-white/70 text-stone-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                    aria-label="Log out"
+                  >
+                    <LogOut className="h-5 w-5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="hidden items-center gap-3 lg:flex">
+                  <Link
+                    to="/login"
+                    className="text-sm font-semibold text-stone-700 transition hover:text-rose-700"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600"
+                  >
+                    Join SuSpa
+                  </Link>
+                </div>
               )}
-              <button type="button" onClick={handleLogout} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-200 text-stone-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600">
-                <LogOut className="h-5 w-5" />
+
+              <Link
+                to="/cart"
+                className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-200/70 bg-white/70 text-stone-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+              >
+                <ShoppingBag className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,#d9637b,#f3a05f)] px-1 text-[10px] font-bold text-white shadow-md">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setIsOpen((prev) => !prev)}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-200/70 bg-white/70 text-stone-700 md:hidden"
+                aria-label={isOpen ? "Close menu" : "Open menu"}
+              >
+                {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
             </div>
-          ) : (
-            <div className="hidden items-center gap-3 md:flex">
-              <Link to="/login" className="text-sm font-semibold text-stone-700">Login</Link>
-              <Link to="/register" className="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-white">Register</Link>
-            </div>
-          )}
-
-          <Link to="/cart" className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-200 text-stone-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600">
-            <ShoppingBag className="h-5 w-5" />
-            {cartCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold text-white">
-                {cartCount}
-              </span>
-            )}
-          </Link>
-          <button type="button" onClick={() => setIsOpen((prev) => !prev)} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-200 text-stone-700 md:hidden">
-            <Menu className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-
-      {isOpen && (
-        <div className="border-t border-rose-100 bg-white md:hidden">
-          <div className="mx-auto flex max-w-7xl flex-col px-4 py-3 sm:px-6">
-            {navItems.map((item) => (
-              <NavLink key={item.to} to={item.to} onClick={() => setIsOpen(false)} className={({ isActive }) => `rounded-xl px-3 py-3 text-sm font-medium ${isActive ? "bg-rose-50 text-rose-600" : "text-stone-700"}`}>
-                {item.label}
-              </NavLink>
-            ))}
-            {isAuthenticated ? (
-              <>
-                <div className="mt-2 flex items-center gap-2 rounded-xl px-3 py-3 text-sm text-stone-700">
-                  <User className="h-4 w-4" /> {user?.fullName}
-                </div>
-                {user?.role === "ADMIN" && (
-                  <Link to="/admin/dashboard" onClick={() => setIsOpen(false)} className="rounded-xl px-3 py-3 text-sm font-medium text-rose-600">
-                    Admin dashboard
-                  </Link>
-                )}
-                <button type="button" onClick={() => { setIsOpen(false); handleLogout(); }} className="rounded-xl px-3 py-3 text-left text-sm font-medium text-stone-700">
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" onClick={() => setIsOpen(false)} className="rounded-xl px-3 py-3 text-sm font-medium text-stone-700">Login</Link>
-                <Link to="/register" onClick={() => setIsOpen(false)} className="rounded-xl px-3 py-3 text-sm font-medium text-rose-600">Register</Link>
-              </>
-            )}
           </div>
         </div>
-      )}
+
+        {isOpen ? (
+          <div className="mt-3 rounded-[28px] border border-white/70 bg-white/88 p-3 shadow-[0_24px_60px_rgba(44,25,22,0.14)] backdrop-blur-xl md:hidden">
+            <div className="space-y-1">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setIsOpen(false)}
+                  className={({ isActive }) =>
+                    `block rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                      isActive
+                        ? "bg-stone-950 text-white"
+                        : "text-stone-700 hover:bg-rose-50 hover:text-rose-700"
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+
+            <div className="mt-3 rounded-[24px] bg-[linear-gradient(135deg,rgba(246,232,220,0.88),rgba(255,255,255,0.96))] p-4">
+              {isAuthenticated ? (
+                <>
+                  <div className="flex items-center gap-3 rounded-2xl bg-white/70 px-4 py-3 text-sm text-stone-700">
+                    <User className="h-4 w-4" />
+                    <div>
+                      <p className="font-semibold text-stone-900">{user?.fullName}</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-500">
+                        Signed in
+                      </p>
+                    </div>
+                  </div>
+                  {user?.role === "ADMIN" ? (
+                    <Link
+                      to="/admin/dashboard"
+                      onClick={() => setIsOpen(false)}
+                      className="mt-3 flex items-center justify-between rounded-2xl border border-stone-200/70 px-4 py-3 text-sm font-semibold text-stone-800"
+                    >
+                      Admin dashboard
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOpen(false);
+                      handleLogout();
+                    }}
+                    className="mt-3 w-full rounded-2xl bg-stone-950 px-4 py-3 text-left text-sm font-semibold text-white"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <p className="px-1 text-sm text-stone-600">
+                    Step into a calmer booking experience.
+                  </p>
+                  <Link
+                    to="/register"
+                    onClick={() => setIsOpen(false)}
+                    className="block rounded-2xl bg-stone-950 px-4 py-3 text-center text-sm font-semibold text-white"
+                  >
+                    Join SuSpa
+                  </Link>
+                  <Link
+                    to="/login"
+                    onClick={() => setIsOpen(false)}
+                    className="block rounded-2xl border border-stone-200/70 px-4 py-3 text-center text-sm font-semibold text-stone-800"
+                  >
+                    Login
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </div>
     </header>
   );
 }

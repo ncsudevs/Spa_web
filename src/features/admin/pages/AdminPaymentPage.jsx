@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
-import { deletePayment, getPayments, updatePaymentStatus } from "../../payments/api/paymentApi";
+import {
+  deletePayment,
+  getPayments,
+  refundPayment,
+  updatePaymentStatus,
+} from "../../payments/api/paymentApi";
 import AppButton from "../../../shared/components/AppButton";
 import StatusBadge from "../../../shared/components/StatusBadge";
+import TableScrollFrame from "../../../shared/components/TableScrollFrame";
 import { useAuth } from "../../../context/useAuth";
 import { formatCurrency, formatDateTime } from "../../../shared/utils/formatters";
 
@@ -10,7 +16,6 @@ const STATUS_OPTIONS = [
   "PENDING",
   "PAID",
   "REJECTED",
-  "REFUNDED",
 ];
 
 export default function PaymentPage() {
@@ -19,6 +24,8 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyKey, setBusyKey] = useState("");
+  const [refundDrafts, setRefundDrafts] = useState({});
+  const [openRefundId, setOpenRefundId] = useState(null);
 
   const canDelete = user?.role === "ADMIN";
 
@@ -65,6 +72,36 @@ export default function PaymentPage() {
     }
   }
 
+  async function handleRefund(item) {
+    const reason = (refundDrafts[item.id] || "").trim();
+    if (!reason) {
+      setError("Enter a refund reason before marking the booking as refunded.");
+      setOpenRefundId(item.id);
+      return;
+    }
+
+    if (!window.confirm(`Cancel booking ${item.bookingCode} and mark payment ${item.paymentCode} as refunded?`)) {
+      return;
+    }
+
+    try {
+      setBusyKey(`refund-${item.id}`);
+      setError("");
+      const updated = await refundPayment(item.id, reason);
+      setItems((current) => current.map((entry) => (entry.id === item.id ? updated : entry)));
+      setRefundDrafts((current) => {
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
+      setOpenRefundId(null);
+    } catch (err) {
+      setError(err.message || "Cannot refund payment.");
+    } finally {
+      setBusyKey("");
+    }
+  }
+
   return (
     <div className="p-8 lg:p-12">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
@@ -85,8 +122,11 @@ export default function PaymentPage() {
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
-        <table className="w-full min-w-[1100px]">
+      <div className="rounded-3xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
+        <TableScrollFrame
+          scrollAreaClassName="overflow-x-auto rounded-[24px]"
+        >
+          <table className="w-full min-w-[1100px] overflow-hidden rounded-[24px]">
           <thead className="bg-stone-50 text-left text-sm text-stone-500">
             <tr>
               <th className="p-5">Payment</th>
@@ -117,6 +157,9 @@ export default function PaymentPage() {
                 const isMomo = item.method === "MOMO";
                 const isAwaitingTransfer = item.status === "AWAITING_TRANSFER";
                 const statusLocked = isMomo || isAwaitingTransfer;
+                const isRefunded = item.status === "REFUNDED";
+                const refundEditorOpen = openRefundId === item.id;
+                const refundBusy = busyKey === `refund-${item.id}`;
 
                 return (
                   <tr key={item.id} className="border-t border-stone-100 align-top">
@@ -140,25 +183,38 @@ export default function PaymentPage() {
                     <td className="p-5">
                       <div className="space-y-2">
                         <StatusBadge value={item.status} />
-                        <select
-                          value={item.status}
-                          onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                          disabled={busyKey === `status-${item.id}` || statusLocked}
-                          className="w-full rounded-2xl border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-100 disabled:text-stone-400"
-                        >
-                          {STATUS_OPTIONS.map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
-                        </select>
+                        {isRefunded ? (
+                          <div className="w-full rounded-2xl border border-stone-200 bg-stone-100 px-3 py-2 text-sm text-stone-500">
+                            Refunded bookings are final.
+                          </div>
+                        ) : (
+                          <select
+                            value={item.status}
+                            onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                            disabled={busyKey === `status-${item.id}` || statusLocked}
+                            className="w-full rounded-2xl border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-100 disabled:text-stone-400"
+                          >
+                            {STATUS_OPTIONS.map((status) => (
+                              <option key={status} value={status}>
+                                {status}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                         <p className="text-xs text-stone-500">
                           {isMomo
                             ? "MoMo is updated automatically by IPN."
+                            : isRefunded
+                              ? "This paid booking was cancelled through the refund flow."
                             : isAwaitingTransfer
                               ? "Waiting for the customer to press Confirm transfer."
                               : "Cashier can mark this transfer as PAID or REJECTED after review."}
                         </p>
+                        {item.refundReason ? (
+                          <div className="rounded-2xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-800">
+                            Refund reason: {item.refundReason}
+                          </div>
+                        ) : null}
                       </div>
                     </td>
                     <td className="p-5 font-medium text-stone-900">
@@ -168,24 +224,70 @@ export default function PaymentPage() {
                       {formatDateTime(item.paidAt)}
                     </td>
                     <td className="p-5">
-                      {canDelete ? (
-                        <AppButton
-                          variant="danger"
-                          onClick={() => handleDelete(item.id, item.paymentCode)}
-                          disabled={busyKey === `delete-${item.id}`}
-                        >
-                          Delete
-                        </AppButton>
-                      ) : (
-                        <span className="text-xs text-stone-400">Cashier view</span>
-                      )}
+                      <div className="space-y-3">
+                        {item.canRefund ? (
+                          refundEditorOpen ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={refundDrafts[item.id] || ""}
+                                onChange={(e) =>
+                                  setRefundDrafts((current) => ({
+                                    ...current,
+                                    [item.id]: e.target.value,
+                                  }))
+                                }
+                                rows={3}
+                                placeholder="Write the refund reason for audit history"
+                                className="w-full rounded-2xl border border-stone-300 px-3 py-2 text-sm"
+                              />
+                              <div className="flex flex-wrap gap-2">
+                                <AppButton
+                                  variant="danger"
+                                  onClick={() => handleRefund(item)}
+                                  disabled={refundBusy}
+                                >
+                                  {refundBusy ? "Saving refund..." : "Cancel booking and mark refunded"}
+                                </AppButton>
+                                <AppButton
+                                  variant="ghost"
+                                  onClick={() => setOpenRefundId(null)}
+                                  disabled={refundBusy}
+                                >
+                                  Close
+                                </AppButton>
+                              </div>
+                            </div>
+                          ) : (
+                            <AppButton
+                              variant="danger"
+                              onClick={() => setOpenRefundId(item.id)}
+                              disabled={!!busyKey}
+                            >
+                              Refund booking
+                            </AppButton>
+                          )
+                        ) : null}
+
+                        {canDelete ? (
+                          <AppButton
+                            variant="danger"
+                            onClick={() => handleDelete(item.id, item.paymentCode)}
+                            disabled={busyKey === `delete-${item.id}`}
+                          >
+                            Delete
+                          </AppButton>
+                        ) : !item.canRefund ? (
+                          <span className="text-xs text-stone-400">Cashier view</span>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 );
               })
             )}
           </tbody>
-        </table>
+          </table>
+        </TableScrollFrame>
       </div>
     </div>
   );

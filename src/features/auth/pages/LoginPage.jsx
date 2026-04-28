@@ -171,10 +171,10 @@ export default function LoginPage() {
         </p>
 
         <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600">
-          <p className="font-semibold text-stone-900">Default admin account</p>
+          <p className="font-semibold text-stone-900">Demo staff account</p>
           <p>Email: admin@suspa.local</p>
           <p>Password: Admin@123</p>
-          <p className="mt-3 font-semibold text-stone-900">Default cashier account</p>
+          <p className="mt-3 font-semibold text-stone-900">Demo cashier account</p>
           <p>Email: cashier@suspa.local</p>
           <p>Password: Cashier@123</p>
         </div>

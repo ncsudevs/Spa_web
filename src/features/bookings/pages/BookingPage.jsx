@@ -110,7 +110,7 @@ function AvailabilityHint({ availability, quantity = 1 }) {
       }`}
     >
       {remaining} / {capacity} slots left
-      {!enough ? ` - selected quantity needs ${quantity}` : ""}
+      {!enough ? ` - your selection needs ${quantity}` : ""}
     </p>
   );
 }
@@ -910,9 +910,8 @@ export default function BookingPage() {
               </div>
 
               <p className="mt-3 text-sm text-stone-500">
-                Group booking uses one shared date and time for everyone and
-                currently supports one selected service with quantity greater
-                than 1.
+                Group booking lets everyone share the same date and time. It is
+                available when you book one service for more than one person.
               </p>
             </div>
 

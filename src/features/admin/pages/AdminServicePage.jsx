@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Edit, EyeOff, Plus, Scissors, Trash2 } from "lucide-react";
+import { Edit, EyeOff, Plus, Scissors, Trash2, X } from "lucide-react";
 import {
   bulkUpdateServiceStatus,
   createService,
@@ -11,6 +11,7 @@ import EmptyState from "../../../shared/components/EmptyState";
 import PageHeader from "../../../shared/components/PageHeader";
 import SectionCard from "../../../shared/components/SectionCard";
 import StatusBadge from "../../../shared/components/StatusBadge";
+import TableScrollFrame from "../../../shared/components/TableScrollFrame";
 import {
   SERVICE_STATUS_LABELS,
   SERVICE_STATUS_OPTIONS,
@@ -175,7 +176,7 @@ export default function ServicePage() {
       <PageHeader
         eyebrow="Admin"
         title="Service management"
-        description="Use status to control customer visibility. ACTIVE means show on the customer site, INACTIVE means hide it without deleting the service."
+        description="Manage treatments, pricing, and visibility without changing the booking flow."
         actions={
           <AppButton onClick={openAdd} disabled={!categoriesReady}>
             <Plus size={18} /> Add service
@@ -235,7 +236,7 @@ export default function ServicePage() {
 
       <SectionCard
         title="Service list"
-        description="This layout follows the cleaner shared-component structure from your idea system."
+        description="Review service details, update visibility, and keep the list easy to maintain."
       >
         {loading ? (
           <div className="py-8 text-sm text-stone-500">Loading services...</div>
@@ -251,7 +252,7 @@ export default function ServicePage() {
             }
           />
         ) : (
-          <div className="overflow-x-auto">
+          <TableScrollFrame scrollAreaClassName="overflow-x-auto">
             <table className="w-full min-w-[920px]">
               <thead className="border-b border-stone-200 text-left text-sm text-stone-500">
                 <tr>
@@ -354,142 +355,152 @@ export default function ServicePage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScrollFrame>
         )}
       </SectionCard>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-4">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl"
+            className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl"
           >
-            <div className="mb-6 flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-semibold text-stone-900">
+            <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-5 py-4 sm:px-8 sm:py-6">
+              <div className="min-w-0">
+                <h2 className="text-xl font-semibold text-stone-900 sm:text-2xl">
                   {editingId ? "Edit service" : "Add service"}
                 </h2>
                 <p className="mt-1 text-sm text-stone-500">
-                  ACTIVE = show to customer, INACTIVE = hide from customer
-                  pages.
+                  Choose whether this service should be visible on the customer side.
                 </p>
               </div>
-              <StatusBadge value={form.status} labels={SERVICE_STATUS_LABELS} />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-stone-700">
-                <span className="mb-2 block font-medium">Service name</span>
-                <input
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                  value={form.name}
-                  onChange={(e) => updateField("name", e.target.value)}
-                />
-              </label>
-              <label className="text-sm text-stone-700">
-                <span className="mb-2 block font-medium">Category</span>
-                <select
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                  value={form.categoryId}
-                  onChange={(e) => updateField("categoryId", e.target.value)}
+              <div className="flex items-center gap-2">
+                <StatusBadge value={form.status} labels={SERVICE_STATUS_LABELS} />
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="rounded-full p-2 text-stone-500 transition hover:bg-stone-100 hover:text-stone-900"
+                  aria-label="Close service form"
                 >
-                  <option value="">Select category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="text-sm text-stone-700">
-                <span className="mb-2 block font-medium">Price</span>
-                <input
-                  type="number"
-                  min="0"
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                  value={form.price}
-                  onChange={(e) => updateField("price", e.target.value)}
-                />
-              </label>
-              <label className="text-sm text-stone-700">
-                <span className="mb-2 block font-medium">
-                  Duration (minutes)
-                </span>
-                <input
-                  type="number"
-                  min="1"
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                  value={form.duration}
-                  onChange={(e) => updateField("duration", e.target.value)}
-                />
-              </label>
-              <label className="text-sm text-stone-700">
-                <span className="mb-2 block font-medium">Slots per time</span>
-                <input
-                  type="number"
-                  min="1"
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                  value={form.slotCapacity}
-                  onChange={(e) => updateField("slotCapacity", e.target.value)}
-                />
-              </label>
-              <label className="text-sm text-stone-700">
-                <span className="mb-2 block font-medium">
-                  Visibility status
-                </span>
-                {/* ACTIVE shows the service on customer pages, INACTIVE keeps the record but hides it from customers. */}
-                <select
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                  value={form.status}
-                  onChange={(e) => updateField("status", e.target.value)}
-                >
-                  {SERVICE_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="md:col-span-2 text-sm text-stone-700">
-                <span className="mb-2 block font-medium">Description</span>
-                <textarea
-                  rows="4"
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
-                  value={form.description}
-                  onChange={(e) => updateField("description", e.target.value)}
-                />
-              </label>
-              <label className="md:col-span-2 text-sm text-stone-700">
-                <span className="mb-2 block font-medium">Service image</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="w-full rounded-xl border border-stone-200 px-4 py-3"
-                  onChange={(e) =>
-                    updateField("imageFile", e.target.files?.[0] || null)
-                  }
-                />
-              </label>
-            </div>
-
-            {form.imagePreview ? (
-              <div className="mt-5 rounded-2xl border border-stone-200 p-3">
-                <p className="mb-3 text-sm font-medium text-stone-700">
-                  Current image
-                </p>
-                <img
-                  src={form.imagePreview}
-                  alt="Service preview"
-                  className="h-40 w-full rounded-2xl object-cover"
-                />
+                  <X size={18} />
+                </button>
               </div>
-            ) : null}
+            </div>
 
-            {error ? (
-              <p className="mt-4 text-sm text-red-600">{error}</p>
-            ) : null}
+            <div className="overflow-y-auto px-5 py-4 sm:px-8 sm:py-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="text-sm text-stone-700">
+                  <span className="mb-2 block font-medium">Service name</span>
+                  <input
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                    value={form.name}
+                    onChange={(e) => updateField("name", e.target.value)}
+                  />
+                </label>
+                <label className="text-sm text-stone-700">
+                  <span className="mb-2 block font-medium">Category</span>
+                  <select
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                    value={form.categoryId}
+                    onChange={(e) => updateField("categoryId", e.target.value)}
+                  >
+                    <option value="">Select category</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm text-stone-700">
+                  <span className="mb-2 block font-medium">Price</span>
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                    value={form.price}
+                    onChange={(e) => updateField("price", e.target.value)}
+                  />
+                </label>
+                <label className="text-sm text-stone-700">
+                  <span className="mb-2 block font-medium">
+                    Duration (minutes)
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                    value={form.duration}
+                    onChange={(e) => updateField("duration", e.target.value)}
+                  />
+                </label>
+                <label className="text-sm text-stone-700">
+                  <span className="mb-2 block font-medium">Slots per time</span>
+                  <input
+                    type="number"
+                    min="1"
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                    value={form.slotCapacity}
+                    onChange={(e) => updateField("slotCapacity", e.target.value)}
+                  />
+                </label>
+                <label className="text-sm text-stone-700">
+                  <span className="mb-2 block font-medium">
+                    Visibility status
+                  </span>
+                  <select
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                    value={form.status}
+                    onChange={(e) => updateField("status", e.target.value)}
+                  >
+                    {SERVICE_STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm text-stone-700 md:col-span-2">
+                  <span className="mb-2 block font-medium">Description</span>
+                  <textarea
+                    rows="4"
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                    value={form.description}
+                    onChange={(e) => updateField("description", e.target.value)}
+                  />
+                </label>
+                <label className="text-sm text-stone-700 md:col-span-2">
+                  <span className="mb-2 block font-medium">Service image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="w-full rounded-xl border border-stone-200 px-4 py-3"
+                    onChange={(e) =>
+                      updateField("imageFile", e.target.files?.[0] || null)
+                    }
+                  />
+                </label>
+              </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+              {form.imagePreview ? (
+                <div className="mt-5 rounded-2xl border border-stone-200 p-3">
+                  <p className="mb-3 text-sm font-medium text-stone-700">
+                    Current image
+                  </p>
+                  <img
+                    src={form.imagePreview}
+                    alt="Service preview"
+                    className="h-40 w-full rounded-2xl object-cover sm:h-52"
+                  />
+                </div>
+              ) : null}
+
+              {error ? (
+                <p className="mt-4 text-sm text-red-600">{error}</p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-stone-200 px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
               <AppButton type="button" variant="ghost" onClick={closeModal}>
                 Cancel
               </AppButton>

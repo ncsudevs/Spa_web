@@ -5,6 +5,7 @@ import AppButton from "../../../shared/components/AppButton";
 import EmptyState from "../../../shared/components/EmptyState";
 import PageHeader from "../../../shared/components/PageHeader";
 import SectionCard from "../../../shared/components/SectionCard";
+import TableScrollFrame from "../../../shared/components/TableScrollFrame";
 import { useServiceCategories } from "../../services/hooks/useServiceCategories";
 
 export default function ServiceCategoryPage() {
@@ -80,13 +81,16 @@ export default function ServiceCategoryPage() {
       <PageHeader
         eyebrow="Admin"
         title="Service categories"
-        description="Categories stay in their own management section, but now use the same reusable card, button, and empty-state pattern as your idea-system frontend."
+        description="Organize services into clear groups so the menu stays easy to manage and browse."
         actions={<AppButton onClick={openCreate}><Plus size={18} /> Add category</AppButton>}
       />
 
       {error || loadError ? <p className="mb-4 text-sm text-red-600">{error || loadError}</p> : null}
 
-      <SectionCard title="Category list" description="Keep category management clean and separate from the service form.">
+      <SectionCard
+        title="Category list"
+        description="Update the groups used to organize services across the admin and customer pages."
+      >
         {loading ? (
           <div className="py-8 text-sm text-stone-500">Loading categories...</div>
         ) : items.length === 0 ? (
@@ -97,7 +101,7 @@ export default function ServiceCategoryPage() {
             action={<AppButton onClick={openCreate}><Plus size={16} /> Add category</AppButton>}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <TableScrollFrame scrollAreaClassName="overflow-x-auto">
             <table className="w-full min-w-[700px]">
               <thead className="border-b border-stone-200 text-left text-sm text-stone-500">
                 <tr>
@@ -125,29 +129,49 @@ export default function ServiceCategoryPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScrollFrame>
         )}
       </SectionCard>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form onSubmit={handleSubmit} className="w-full max-w-xl rounded-3xl bg-white p-8 shadow-2xl">
-            <h2 className="text-2xl font-semibold text-stone-900">{editingId ? 'Edit category' : 'Add category'}</h2>
-            <p className="mt-1 text-sm text-stone-500">This modal now matches the shared style used across the refactored admin pages.</p>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 sm:items-center sm:p-4">
+          <form
+            onSubmit={handleSubmit}
+            className="flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl"
+          >
+            <div className="border-b border-stone-200 px-5 py-4 sm:px-8 sm:py-6">
+              <h2 className="text-xl font-semibold text-stone-900 sm:text-2xl">
+                {editingId ? "Edit category" : "Add category"}
+              </h2>
+              <p className="mt-1 text-sm text-stone-500">
+                Keep category names short and clear so they stay easy to scan.
+              </p>
+            </div>
 
-            <label className="mt-6 block text-sm text-stone-700">
-              <span className="mb-2 block font-medium">Category name</span>
-              <input className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300" value={name} onChange={(e) => setName(e.target.value)} />
-            </label>
+            <div className="overflow-y-auto px-5 py-4 sm:px-8 sm:py-6">
+              <label className="block text-sm text-stone-700">
+                <span className="mb-2 block font-medium">Category name</span>
+                <input
+                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </label>
 
-            <label className="mt-4 block text-sm text-stone-700">
-              <span className="mb-2 block font-medium">Description</span>
-              <textarea rows="4" className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300" value={description} onChange={(e) => setDescription(e.target.value)} />
-            </label>
+              <label className="mt-4 block text-sm text-stone-700">
+                <span className="mb-2 block font-medium">Description</span>
+                <textarea
+                  rows="4"
+                  className="w-full rounded-xl border border-stone-200 px-4 py-3 outline-none focus:border-rose-300"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </label>
 
-            {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+              {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+            </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="flex flex-col-reverse gap-3 border-t border-stone-200 px-5 py-4 sm:flex-row sm:justify-end sm:px-8">
               <AppButton type="button" variant="ghost" onClick={closeModal}>Cancel</AppButton>
               <AppButton type="submit">Save category</AppButton>
             </div>

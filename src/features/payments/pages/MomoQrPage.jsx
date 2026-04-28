@@ -20,7 +20,7 @@ export default function MomoQrPage() {
   const resultCode = searchParams.get("resultCode");
   const message =
     searchParams.get("message") ||
-    "Waiting for the latest payment status from the server.";
+    "We are checking the latest payment update for you.";
   const bookingCode =
     searchParams.get("bookingCode") || location.state?.bookingCode || "";
   const paymentCode =
@@ -83,15 +83,14 @@ export default function MomoQrPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-fuchsia-600">
-              MoMo return
+              MoMo
             </p>
             <h1 className="mt-3 text-3xl font-semibold text-stone-900">
-              Payment status after redirect
+              Checking your payment
             </h1>
             <p className="mt-3 max-w-2xl text-sm text-stone-500">
-              MoMo has redirected the customer back to your website. The final
-              booking state should rely on the server-side IPN update, so this
-              page keeps checking the latest data automatically.
+              You have been redirected back from MoMo. We are refreshing your
+              booking so the latest payment result appears here automatically.
             </p>
           </div>
           <Link
@@ -129,9 +128,9 @@ export default function MomoQrPage() {
               <p className="font-semibold">
                 Current payment status: {booking?.paymentStatus || "PENDING"}
               </p>
-              <p className="text-sm opacity-90">
-                MoMo redirect result code: {resultCode || "N/A"}
-              </p>
+              {resultCode ? (
+                <p className="text-sm opacity-90">Reference code: {resultCode}</p>
+              ) : null}
             </div>
           </div>
           <p className="mt-3 text-sm opacity-90">{message}</p>
@@ -139,7 +138,7 @@ export default function MomoQrPage() {
 
         {loading ? (
           <div className="mt-6 rounded-[24px] bg-stone-50 px-5 py-4 text-sm text-stone-600">
-            Refreshing booking data...
+            Refreshing your booking...
           </div>
         ) : error ? (
           <div className="mt-6 rounded-[24px] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">
@@ -170,8 +169,8 @@ export default function MomoQrPage() {
           </div>
         ) : (
           <div className="mt-6 rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-            The booking has not been found in the refreshed list yet. Open My
-            Bookings to verify the latest state.
+            We are still updating this booking. Open My Bookings in a moment to
+            check the latest status.
           </div>
         )}
       </div>

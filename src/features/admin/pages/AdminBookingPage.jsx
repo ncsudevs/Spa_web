@@ -40,7 +40,11 @@ function isStatusDisabled(booking, status) {
         !["CONFIRMED", "COMPLETED"].includes(booking.status)
       );
     case "CANCELLED":
-      return booking.isCheckedIn || booking.status === "COMPLETED";
+      return (
+        booking.isCheckedIn ||
+        booking.status === "COMPLETED" ||
+        booking.paymentStatus === "PAID"
+      );
     default:
       return false;
   }

@@ -34,6 +34,13 @@ export function updatePaymentStatus(id, status) {
   });
 }
 
+export function refundPayment(id, reason) {
+  return http(`${BASE}/${id}/refund`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export function deletePayment(id) {
   return http(`${BASE}/${id}`, {
     method: "DELETE",

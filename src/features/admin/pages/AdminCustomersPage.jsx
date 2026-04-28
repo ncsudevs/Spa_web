@@ -10,6 +10,7 @@ import AppButton from "../../../shared/components/AppButton";
 import PageHeader from "../../../shared/components/PageHeader";
 import SectionCard from "../../../shared/components/SectionCard";
 import StatusBadge from "../../../shared/components/StatusBadge";
+import TableScrollFrame from "../../../shared/components/TableScrollFrame";
 import {
   getBookingStatusBadgeLabels,
   getBookingWorkflowLabel,
@@ -132,16 +133,16 @@ export default function CustomersPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[2fr,1.2fr]">
-        <SectionCard title="Customer list">
-          {loading ? (
-            <div className="py-8 text-sm text-stone-500">Loading...</div>
-          ) : filtered.length === 0 ? (
-            <div className="py-8 text-sm text-stone-500">No customers.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px]">
-                <thead className="border-b border-stone-200 text-left text-sm text-stone-500">
-                  <tr>
+        <SectionCard title="Customer list" className="min-w-0">
+        {loading ? (
+          <div className="py-8 text-sm text-stone-500">Loading...</div>
+        ) : filtered.length === 0 ? (
+          <div className="py-8 text-sm text-stone-500">No customers.</div>
+        ) : (
+          <TableScrollFrame scrollAreaClassName="overflow-x-auto">
+            <table className="w-full min-w-[900px]">
+              <thead className="border-b border-stone-200 text-left text-sm text-stone-500">
+                <tr>
                     <th className="p-3">Name</th>
                     <th className="p-3">Email</th>
                     <th className="p-3">Phone</th>
@@ -206,11 +207,11 @@ export default function CustomersPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
-        </SectionCard>
+          </TableScrollFrame>
+        )}
+      </SectionCard>
 
-        <SectionCard title="Customer detail">
+        <SectionCard title="Customer detail" className="min-w-0">
           {detailLoading ? (
             <div className="py-6 text-sm text-stone-500">Loading detail...</div>
           ) : detailError ? (

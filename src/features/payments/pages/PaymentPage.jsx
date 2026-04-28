@@ -18,7 +18,7 @@ const methods = [
     id: "BANK_TRANSFER",
     label: "Bank transfer",
     icon: Landmark,
-    description: "See the bank details, transfer manually, then notify cashier after sending it.",
+    description: "View the bank details, make the transfer, and confirm once it has been sent.",
   },
 ];
 
@@ -32,8 +32,29 @@ export default function PaymentPage() {
   const { errorRef } = useFormErrorAssist(error);
 
   if (!booking) {
-    navigate("/my-bookings");
-    return null;
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
+        <section className="rounded-[32px] bg-white p-8 shadow-sm lg:p-10">
+          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-rose-500">
+            Payment
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold text-stone-900">
+            Payment details not available
+          </h1>
+          <p className="mt-4 text-stone-600">
+            Open My Bookings to continue payment for one of your existing
+            bookings.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/my-bookings")}
+            className="mt-8 inline-flex items-center justify-center rounded-full bg-stone-950 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-rose-500"
+          >
+            Go to My Bookings
+          </button>
+        </section>
+      </div>
+    );
   }
 
   async function handlePay() {
@@ -56,7 +77,7 @@ export default function PaymentPage() {
           return;
         }
 
-        throw new Error("MoMo payment session was created but no hosted payment URL was returned.");
+        throw new Error("We could not open MoMo right now. Please try again.");
       }
 
       navigate("/my-bookings", {
@@ -157,7 +178,7 @@ export default function PaymentPage() {
                   <div>
                     <p className="font-medium text-white">{item.serviceName}</p>
                     <p className="text-xs text-stone-400">
-                      {formatDate(item.appointmentDate)} • {item.appointmentTime}
+                      {formatDate(item.appointmentDate)} - {item.appointmentTime}
                     </p>
                     <p className="mt-1 text-xs text-stone-400">
                       {item.quantity} x {formatCurrency(item.unitPrice)}

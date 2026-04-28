@@ -81,7 +81,7 @@ export default function CartPage() {
   if (cart.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 lg:px-8">
-        <div className="rounded-4x1 bg-white p-12 shadow-sm">
+        <div className="rounded-4xl bg-white p-12 shadow-sm">
           <ShoppingBag className="mx-auto h-12 w-12 text-rose-400" />
           <h1 className="mt-6 text-3xl font-semibold text-stone-900">
             Your cart is empty
@@ -104,14 +104,14 @@ export default function CartPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-        <section className="rounded-4x1 bg-white p-8 shadow-sm">
+        <section className="rounded-4xl bg-white p-8 shadow-sm">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <h1 className="text-3xl font-semibold text-stone-900">
               Your spa cart
             </h1>
             <p className="text-sm text-stone-500">
-              Tick the services you want to book. If you leave everything
-              unticked, SuSpa will use all services in your cart.
+              Choose the services you want to book. If nothing is selected, we
+              will use everything in your cart.
             </p>
           </div>
 
@@ -152,7 +152,7 @@ export default function CartPage() {
                         {item.service.name}
                       </h2>
                       <p className="mt-1 text-sm text-stone-500">
-                        {item.service.duration} min •{" "}
+                        {item.service.duration} min -{" "}
                         {item.service.categoryName || item.service.category}
                       </p>
                       <p className="mt-3 text-sm text-stone-600">
@@ -227,8 +227,8 @@ export default function CartPage() {
               <span>{formatCurrency(selectedSubtotal)}</span>
             </div>
             <div className="flex items-center justify-between text-xs text-stone-400">
-              <span>Selection rule</span>
-              <span>{selectedIds.length ? "Ticked items" : "All items"}</span>
+              <span>Current selection</span>
+              <span>{selectedIds.length ? "Selected items" : "Everything in cart"}</span>
             </div>
           </div>
           <div className="mt-6 border-t border-white/10 pt-6">
