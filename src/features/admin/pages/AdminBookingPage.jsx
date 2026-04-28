@@ -12,7 +12,7 @@ import BookingCard from "../../bookings/components/BookingCard";
 import { getBookingStatusOptions } from "../../bookings/utils/bookingWorkflow";
 import { getStaff } from "../../staff/api/staffApi";
 import AppButton from "../../../shared/components/AppButton";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/useAuth";
 
 const STATUS_OPTIONS = getBookingStatusOptions();
 

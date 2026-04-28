@@ -4,7 +4,7 @@ import { createBooking, getSlotAvailability } from "../api/bookingApi";
 import Field from "../../../shared/components/Field";
 import DatePicker from "../../../shared/components/DatePicker";
 import FormErrorAlert from "../../../shared/components/FormErrorAlert";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/useAuth";
 import useFormErrorAssist from "../../../shared/hooks/useFormErrorAssist";
 import { formatCurrency, formatDate } from "../../../shared/utils/formatters";
 import {

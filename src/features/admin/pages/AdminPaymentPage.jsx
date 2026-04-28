@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { deletePayment, getPayments, updatePaymentStatus } from "../../payments/api/paymentApi";
 import AppButton from "../../../shared/components/AppButton";
 import StatusBadge from "../../../shared/components/StatusBadge";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/useAuth";
 import { formatCurrency, formatDateTime } from "../../../shared/utils/formatters";
 
 const STATUS_OPTIONS = [

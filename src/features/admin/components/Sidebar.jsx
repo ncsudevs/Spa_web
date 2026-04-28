@@ -1,6 +1,6 @@
 import { Activity, CalendarCheck2, CreditCard, FileText, LayoutDashboard, LogOut, Scissors, Tags, UserRound, Users } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/useAuth";
 
 const menu = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "CASHIER"] },

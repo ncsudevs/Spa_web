@@ -5,7 +5,7 @@ import {
   Landmark,
   Wallet,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { getBookings } from "../api/bookingApi";
 import {
@@ -15,7 +15,7 @@ import {
 } from "../../payments/api/paymentApi";
 import AppButton from "../../../shared/components/AppButton";
 import StatusBadge from "../../../shared/components/StatusBadge";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/useAuth";
 import { clearCart } from "../../../shared/utils/customerStorage";
 import {
   getBookingStatusBadgeLabels,
@@ -257,29 +257,7 @@ export default function MyBookingsPage() {
     setNotice(locationNotice);
   }, [locationNotice]);
 
-  useEffect(() => {
-    loadBookings();
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  async function loadBookings() {
-    try {
-      setLoading(true);
-      setError("");
-      const data = await getBookings();
-      const nextBookings = data || [];
-      setBookings(nextBookings);
-      syncSelectedMethods(nextBookings);
-      await hydrateLatestPayments(nextBookings);
-    } catch (err) {
-      setError(err.message || "Cannot load bookings.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function syncSelectedMethods(nextBookings) {
+  const syncSelectedMethods = useCallback((nextBookings) => {
     setSelectedMethods((current) => {
       const next = { ...current };
       for (const booking of nextBookings) {
@@ -289,9 +267,9 @@ export default function MyBookingsPage() {
       }
       return next;
     });
-  }
+  }, []);
 
-  async function hydrateLatestPayments(nextBookings) {
+  const hydrateLatestPayments = useCallback(async (nextBookings) => {
     const bookingsWithPayments = nextBookings.filter((booking) => booking.latestPaymentId);
 
     if (bookingsWithPayments.length === 0) {
@@ -311,7 +289,29 @@ export default function MyBookingsPage() {
     });
 
     setLatestPayments(paymentMap);
-  }
+  }, []);
+
+  const loadBookings = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await getBookings();
+      const nextBookings = data || [];
+      setBookings(nextBookings);
+      syncSelectedMethods(nextBookings);
+      await hydrateLatestPayments(nextBookings);
+    } catch (err) {
+      setError(err.message || "Cannot load bookings.");
+    } finally {
+      setLoading(false);
+    }
+  }, [hydrateLatestPayments, syncSelectedMethods]);
+
+  useEffect(() => {
+    loadBookings();
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [loadBookings]);
 
   function getSelectedMethod(booking) {
     return (

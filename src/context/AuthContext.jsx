@@ -1,9 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getMe,
   login as loginApi,
   register as registerApi,
 } from "../features/auth/api/authApi";
+import { AuthContext } from "./auth-context";
 import {
   clearAuth,
   getCurrentUser,
@@ -11,8 +12,6 @@ import {
   isAuthenticated,
   saveAuth,
 } from "../shared/utils/authStorage";
-
-const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => getCurrentUser());
@@ -92,10 +91,4 @@ export function AuthProvider({ children }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used inside AuthProvider");
-  return context;
 }

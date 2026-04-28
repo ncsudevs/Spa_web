@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Edit, EyeOff, Plus, Scissors, Trash2 } from "lucide-react";
 import {
+  bulkUpdateServiceStatus,
   createService,
   deleteService,
   updateService,

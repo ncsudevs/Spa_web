@@ -1,7 +1,7 @@
 import { LogOut, Menu, ShoppingBag, Sparkles, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/useAuth";
 import { readCart } from "../../../shared/utils/customerStorage";
 
 const navItems = [

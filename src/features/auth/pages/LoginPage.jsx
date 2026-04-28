@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import FormErrorAlert from "../../../shared/components/FormErrorAlert";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/useAuth";
 import useFormErrorAssist, {
   focusAndScrollField,
 } from "../../../shared/hooks/useFormErrorAssist";
