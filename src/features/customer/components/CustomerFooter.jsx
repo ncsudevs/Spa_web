@@ -1,8 +1,13 @@
 import { Sparkles } from "lucide-react";
+import RevealSection from "../../../shared/components/RevealSection";
 
 export default function CustomerFooter() {
   return (
-    <footer className="mt-10 border-t border-white/10 bg-[linear-gradient(180deg,#1d1312,#120c0b)] text-stone-300">
+    <RevealSection
+      as="footer"
+      className="mt-10 border-t border-white/10 bg-[linear-gradient(180deg,#1d1312,#120c0b)] text-stone-300"
+      duration={0.8}
+    >
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
@@ -45,6 +50,6 @@ export default function CustomerFooter() {
           </div>
         </div>
       </div>
-    </footer>
+    </RevealSection>
   );
 }

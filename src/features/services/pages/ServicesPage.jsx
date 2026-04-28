@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Search, Sparkles } from "lucide-react";
 import ServiceCard from "../components/ServiceCard";
 import EmptyState from "../../../shared/components/EmptyState";
 import PageHeader from "../../../shared/components/PageHeader";
+import RevealSection from "../../../shared/components/RevealSection";
 import SectionCard from "../../../shared/components/SectionCard";
 import { useServiceCategories } from "../hooks/useServiceCategories";
 import { useServices } from "../hooks/useServices";
@@ -10,6 +11,8 @@ import { useServices } from "../hooks/useServices";
 export default function ServicesPage() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [keyword, setKeyword] = useState("");
+  const [resultsMotionKey, setResultsMotionKey] = useState(0);
+  const resultsRef = useRef(null);
   const { categories } = useServiceCategories();
   const { services, loading, error, reload } = useServices({
     categoryId: selectedCategory?.id ?? null,
@@ -31,9 +34,32 @@ export default function ServicesPage() {
     });
   }, [keyword, selectedCategory, services]);
 
+  function focusResults({ smooth = true } = {}) {
+    window.requestAnimationFrame(() => {
+      resultsRef.current?.scrollIntoView({
+        behavior: smooth ? "smooth" : "auto",
+        block: "start",
+      });
+    });
+  }
+
+  function handleSelectAll() {
+    setSelectedCategory(null);
+    setResultsMotionKey((value) => value + 1);
+    reload(null).catch(() => {});
+    focusResults();
+  }
+
+  function handleSelectCategory(category) {
+    setSelectedCategory(category);
+    setResultsMotionKey((value) => value + 1);
+    focusResults();
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-      <SectionCard>
+      <RevealSection as="div" className="mb-10">
+        <SectionCard>
         <PageHeader
           eyebrow="Services"
           title="Find your perfect treatment"
@@ -45,11 +71,8 @@ export default function ServicesPage() {
             {/* Reset button removes the category filter and requests the full service list again. */}
             <button
               type="button"
-              onClick={() => {
-                setSelectedCategory(null);
-                reload(null).catch(() => {});
-              }}
-              className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+              onClick={handleSelectAll}
+              className={`soft-pill rounded-full px-5 py-2.5 text-sm font-semibold transition ${
                 selectedCategory === null
                   ? "bg-stone-950 text-white"
                   : "bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-rose-600"
@@ -62,8 +85,8 @@ export default function ServicesPage() {
               <button
                 key={category.id}
                 type="button"
-                onClick={() => setSelectedCategory(category)}
-                className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                onClick={() => handleSelectCategory(category)}
+                className={`soft-pill rounded-full px-5 py-2.5 text-sm font-semibold transition ${
                   selectedCategory?.id === category.id
                     ? "bg-stone-950 text-white"
                     : "bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-rose-600"
@@ -77,12 +100,23 @@ export default function ServicesPage() {
           <label className="relative block w-full lg:max-w-xs">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
+              id="service-search"
+              name="service-search"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Search services..."
+              placeholder="Find your ritual..."
               className="h-12 w-full rounded-full border border-stone-200 bg-stone-50 pl-11 pr-5 text-sm outline-none transition focus:border-rose-300"
             />
           </label>
+        </div>
+
+        <div className="mt-5 flex items-center justify-between gap-4 border-t border-stone-200/70 pt-5">
+          <p className="text-sm text-stone-500">
+            {filteredServices.length} treatment{filteredServices.length === 1 ? "" : "s"} found
+          </p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-stone-400">
+            Curated for a calmer booking flow
+          </p>
         </div>
 
         {error ? (
@@ -90,20 +124,25 @@ export default function ServicesPage() {
             {error}
           </div>
         ) : null}
-      </SectionCard>
+        </SectionCard>
+      </RevealSection>
 
       {loading ? (
         <div className="mt-10 rounded-[28px] bg-white p-10 text-center text-stone-500 shadow-sm">
           Loading services...
         </div>
       ) : filteredServices.length > 0 ? (
-        <div className="mt-10 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-          {filteredServices.map((service) => (
-            <ServiceCard key={service.id} service={service} />
+        <div
+          key={`${selectedCategory?.id ?? "all"}-${keyword}-${resultsMotionKey}`}
+          ref={resultsRef}
+          className="reveal-up mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3"
+        >
+          {filteredServices.map((service, index) => (
+            <ServiceCard key={service.id} service={service} index={index} />
           ))}
         </div>
       ) : (
-        <div className="mt-10">
+        <div ref={resultsRef} className="mt-8">
           <EmptyState
             icon={Sparkles}
             title="No services matched your search"

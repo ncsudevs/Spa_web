@@ -21,6 +21,7 @@ const navItems = [
 export default function CustomerNav() {
   const [cartCount, setCartCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [isCartBouncing, setIsCartBouncing] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
@@ -30,14 +31,23 @@ export default function CustomerNav() {
       const total = readCart().reduce((sum, item) => sum + item.quantity, 0);
       setCartCount(total);
     };
+    let resetId = 0;
+    const handleCartBounce = () => {
+      window.clearTimeout(resetId);
+      setIsCartBouncing(true);
+      resetId = window.setTimeout(() => setIsCartBouncing(false), 760);
+    };
 
     syncCart();
     window.addEventListener("cartUpdated", syncCart);
     window.addEventListener("storage", syncCart);
+    window.addEventListener("cartBounce", handleCartBounce);
 
     return () => {
+      window.clearTimeout(resetId);
       window.removeEventListener("cartUpdated", syncCart);
       window.removeEventListener("storage", syncCart);
+      window.removeEventListener("cartBounce", handleCartBounce);
     };
   }, [location.pathname]);
 
@@ -136,7 +146,10 @@ export default function CustomerNav() {
 
               <Link
                 to="/cart"
-                className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-200/70 bg-white/70 text-stone-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                data-cart-target
+                className={`cart-target relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-200/70 bg-white/70 text-stone-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 ${
+                  isCartBouncing ? "is-bouncing" : ""
+                }`}
               >
                 <ShoppingBag className="h-5 w-5" />
                 {cartCount > 0 && (

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import RevealSection from "../../../shared/components/RevealSection";
 import ServiceCard from "../../services/components/ServiceCard";
 import { useServices } from "../../services/hooks/useServices";
 import { formatCurrency } from "../../../shared/utils/formatters";
@@ -57,7 +58,7 @@ export default function HomePage() {
 
   return (
     <div className="pb-10">
-      <section className="px-4 pb-12 pt-6 sm:px-6 lg:px-8">
+      <RevealSection as="section" className="px-4 pb-12 pt-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="hero-glow reveal-up rounded-[40px] border border-white/70 bg-[linear-gradient(135deg,rgba(255,249,243,0.96),rgba(247,232,220,0.95)_52%,rgba(243,217,196,0.92))] px-6 py-8 sm:px-8 lg:px-12 lg:py-12">
             <div className="grid gap-10 lg:grid-cols-[1.04fr_0.96fr] lg:items-center">
@@ -79,14 +80,14 @@ export default function HomePage() {
                 <div className="mt-8 flex flex-wrap gap-4">
                   <Link
                     to="/services"
-                    className="shimmer-line inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#231614,#66303a_72%,#b76d52)] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_34px_rgba(62,30,27,0.22)] transition hover:brightness-110"
+                    className="luxe-button inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold text-white shadow-[0_16px_34px_rgba(62,30,27,0.22)] transition hover:brightness-110"
                   >
                     <span>Explore services</span>
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   <Link
                     to="/booking"
-                    className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 px-6 py-3.5 text-sm font-semibold text-stone-800 transition hover:border-rose-200 hover:bg-rose-50"
+                    className="soft-pill inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 px-6 py-3.5 text-sm font-semibold text-stone-800 transition hover:border-rose-200 hover:bg-rose-50"
                   >
                     Book your visit
                   </Link>
@@ -187,9 +188,13 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <RevealSection
+        as="section"
+        className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"
+        delay={0.05}
+      >
         <div className="grid gap-5 lg:grid-cols-3">
           {signatureMoments.map((item, index) => {
             const Icon = item.icon;
@@ -212,9 +217,13 @@ export default function HomePage() {
             );
           })}
         </div>
-      </section>
+      </RevealSection>
 
-      <section className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+      <RevealSection
+        as="section"
+        className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 lg:px-8"
+        delay={0.08}
+      >
         <div className="rounded-[36px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.76),rgba(249,240,233,0.86))] p-6 shadow-[0_28px_70px_rgba(53,31,26,0.08)] sm:p-8 lg:p-10">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
@@ -240,9 +249,9 @@ export default function HomePage() {
             </div>
           ) : featuredServices.length > 0 ? (
             <div className="mt-10 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-              {featuredServices.map((service) => (
-                <ServiceCard key={service.id} service={service} />
-              ))}
+            {featuredServices.map((service, index) => (
+              <ServiceCard key={service.id} service={service} index={index} />
+            ))}
             </div>
           ) : (
             <div className="mt-10 rounded-[28px] border border-dashed border-stone-300 bg-white/80 p-10 text-center text-stone-500">
@@ -250,9 +259,13 @@ export default function HomePage() {
             </div>
           )}
         </div>
-      </section>
+      </RevealSection>
 
-      <section className="bg-[linear-gradient(180deg,#241816,#120c0b)] py-20 text-white">
+      <RevealSection
+        as="section"
+        className="bg-[linear-gradient(180deg,#241816,#120c0b)] py-20 text-white"
+        delay={0.08}
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
@@ -289,7 +302,7 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-      </section>
+      </RevealSection>
     </div>
   );
 }
