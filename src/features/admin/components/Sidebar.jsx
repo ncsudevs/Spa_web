@@ -4,11 +4,41 @@ import {
   LogOut,
   Activity,
   X,
+  LayoutDashboard,
+  Layers,
+  Sparkles,
+  Users,
+  UserRound,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/useAuth";
 
 const menu = [
+  {
+    to: "/admin/dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    roles: ["ADMIN"],
+  },
+  {
+    to: "/admin/service-categories",
+    label: "Service Categories",
+    icon: Layers,
+    roles: ["ADMIN"],
+  },
+  {
+    to: "/admin/services",
+    label: "Services",
+    icon: Sparkles,
+    roles: ["ADMIN"],
+  },
+  { to: "/admin/staff", label: "Staff", icon: Users, roles: ["ADMIN"] },
+  {
+    to: "/admin/customers",
+    label: "Customers",
+    icon: UserRound,
+    roles: ["ADMIN"],
+  },
   {
     to: "/admin/bookings",
     label: "Bookings",
@@ -104,7 +134,9 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
     <>
       <div
         className={`fixed inset-0 z-40 bg-black/40 transition md:hidden ${
-          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+          open
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
         }`}
         onClick={onClose}
       />

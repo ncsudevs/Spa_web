@@ -27,7 +27,10 @@ export default function AppRoutes() {
       <Route element={<CustomerLayout />}>
         <Route path={ROUTE_PATHS.home} element={<HomePage />} />
         <Route path={ROUTE_PATHS.services} element={<ServicesPage />} />
-        <Route path={ROUTE_PATHS.serviceDetail} element={<ServiceDetailPage />} />
+        <Route
+          path={ROUTE_PATHS.serviceDetail}
+          element={<ServiceDetailPage />}
+        />
         <Route path={ROUTE_PATHS.cart} element={<CartPage />} />
         <Route
           path={ROUTE_PATHS.booking}
@@ -75,11 +78,15 @@ export default function AppRoutes() {
       >
         <Route
           index
-          element={<Navigate to={ROUTE_PATHS.adminBookings} replace />}
+          element={<Navigate to={ROUTE_PATHS.adminDashboard} replace />}
         />
         <Route
           path={ROUTE_PATHS.adminDashboard}
-          element={<DashboardPage />}
+          element={
+            <ProtectedRoute roles={ROLE_GROUPS.admin}>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
         />
         <Route
           path={ROUTE_PATHS.adminServiceCategories}

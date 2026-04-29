@@ -76,22 +76,22 @@ export default function ServiceCard({ service, index = 0 }) {
           </span>
         </div>
 
-        <div className="flex items-center justify-between gap-4">
-          <p className="max-w-[16rem] text-sm leading-7 text-stone-600">
+        <div className="flex items-start justify-between gap-5">
+          <p className="flex-1 text-sm leading-7 text-stone-600">
             Learn more about the treatment, then move into booking with confidence.
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 flex-col items-stretch gap-3">
             <button
               type="button"
               onClick={handleQuickAdd}
-              className="soft-pill inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-800 shadow-sm"
+              className="soft-pill inline-flex items-center justify-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-800 shadow-sm"
             >
               <ShoppingBag className="h-4 w-4" />
               Quick add
             </button>
             <Link
               to={`/services/${service.id}`}
-              className="luxe-button inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(53,28,24,0.16)] transition hover:brightness-110"
+              className="luxe-button inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(53,28,24,0.16)] transition hover:brightness-110"
             >
               View details
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />

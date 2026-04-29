@@ -1,10 +1,4 @@
-import {
-  ArrowRight,
-  CheckCircle2,
-  Clock3,
-  Sparkles,
-  Star,
-} from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, Sparkles, Star } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import RevealSection from "../../../shared/components/RevealSection";
@@ -15,7 +9,8 @@ import { formatCurrency } from "../../../shared/utils/formatters";
 const signatureMoments = [
   {
     title: "Warm welcome",
-    description: "A gentle, premium first impression from the second the page opens.",
+    description:
+      "A gentle, premium first impression from the second the page opens.",
     icon: Sparkles,
   },
   {
@@ -25,7 +20,8 @@ const signatureMoments = [
   },
   {
     title: "Trusted care",
-    description: "Treatments presented with the same calm and confidence as the service itself.",
+    description:
+      "Treatments presented with the same calm and confidence as the service itself.",
     icon: CheckCircle2,
   },
 ];
@@ -69,12 +65,13 @@ export default function HomePage() {
                 </p>
 
                 <h1 className="font-display mt-6 max-w-[10.5ch] text-[2.8rem] leading-[0.94] text-stone-950 sm:text-[3.9rem] lg:text-[4.8rem] xl:text-[5.15rem]">
-                  A luxury spa booking experience shaped like a signature ritual.
+                  A luxury spa booking experience shaped like a signature
+                  ritual.
                 </h1>
 
                 <p className="mt-6 max-w-2xl text-base leading-8 text-stone-700 sm:text-lg">
-                  SuSpa is designed like a signature ritual: warm visuals, smooth
-                  actions, and a calm flow from discovery to payment.
+                  SuSpa is designed like a signature ritual: warm visuals,
+                  smooth actions, and a calm flow from discovery to payment.
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-4">
@@ -150,13 +147,14 @@ export default function HomePage() {
 
                 <div className="glass-card reveal-up absolute right-0 top-10 w-[48%] rounded-[28px] border border-white/70 p-5 shadow-[0_22px_52px_rgba(48,27,22,0.14)] lg:top-12">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                    Today&apos;s mood
+                    Today's mood
                   </p>
                   <p className="font-display mt-3 text-2xl text-stone-950">
                     Soft light, slow pace, full reset.
                   </p>
                   <p className="mt-3 text-sm leading-6 text-stone-600">
-                    The interface mirrors the service: clean, warm, and quietly confident.
+                    The interface mirrors the service: clean, warm, and quietly
+                    confident.
                   </p>
                 </div>
 
@@ -181,7 +179,9 @@ export default function HomePage() {
                       "A refined introduction to the treatments guests are most likely to love first."}
                   </p>
                   <p className="mt-5 text-sm font-semibold text-stone-950">
-                    {heroService ? formatCurrency(heroService.price) : "Ready to explore"}
+                    {heroService
+                      ? formatCurrency(heroService.price)
+                      : "Ready to explore"}
                   </p>
                 </div>
               </div>
@@ -249,9 +249,9 @@ export default function HomePage() {
             </div>
           ) : featuredServices.length > 0 ? (
             <div className="mt-10 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-            {featuredServices.map((service, index) => (
-              <ServiceCard key={service.id} service={service} index={index} />
-            ))}
+              {featuredServices.map((service, index) => (
+                <ServiceCard key={service.id} service={service} index={index} />
+              ))}
             </div>
           ) : (
             <div className="mt-10 rounded-[28px] border border-dashed border-stone-300 bg-white/80 p-10 text-center text-stone-500">
