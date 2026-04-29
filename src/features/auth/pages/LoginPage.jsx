@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import FormErrorAlert from "../../../shared/components/FormErrorAlert";
 import { useAuth } from "../../../context/useAuth";
+import { getDefaultPathForRole } from "../../../routes/routeConfig";
 import useFormErrorAssist, {
   focusAndScrollField,
 } from "../../../shared/hooks/useFormErrorAssist";
@@ -60,7 +61,7 @@ export default function LoginPage() {
       setFieldErrors({});
       const data = await login(form);
       const destination = ["ADMIN", "CASHIER"].includes(data.user.role)
-        ? "/admin/dashboard"
+        ? getDefaultPathForRole(data.user.role)
         : location.state?.from || "/";
       navigate(destination, { replace: true });
     } catch (err) {

@@ -57,7 +57,7 @@ export default function StaffAssignmentPanel({
                     <option value="">Select staff</option>
                     {matchingStaff.map((person) => (
                       <option key={person.id} value={person.id}>
-                        {person.fullName} - cap {person.maxConcurrent}
+                        {person.fullName} - available {person.maxConcurrent}
                       </option>
                     ))}
                   </select>
@@ -65,7 +65,9 @@ export default function StaffAssignmentPanel({
                   <input
                     type="number"
                     min="1"
-                    value={draft.assignedQuantity ?? assignment.assignedQuantity}
+                    value={
+                      draft.assignedQuantity ?? assignment.assignedQuantity
+                    }
                     onChange={(e) =>
                       setEditDraft(
                         assignment.id,
@@ -79,7 +81,9 @@ export default function StaffAssignmentPanel({
 
                   <AppButton
                     variant="secondary"
-                    onClick={() => onUpdateAssignment(item.detailId, assignment)}
+                    onClick={() =>
+                      onUpdateAssignment(item.detailId, assignment)
+                    }
                     disabled={saveDisabled}
                   >
                     Save
@@ -87,7 +91,9 @@ export default function StaffAssignmentPanel({
 
                   <AppButton
                     variant="danger"
-                    onClick={() => onDeleteAssignment(item.detailId, assignment.id)}
+                    onClick={() =>
+                      onDeleteAssignment(item.detailId, assignment.id)
+                    }
                     disabled={
                       !canEditAssignments ||
                       busyKey === `delete-assignment-${assignment.id}`
@@ -98,7 +104,9 @@ export default function StaffAssignmentPanel({
                 </div>
 
                 <p className="mt-2 text-xs text-stone-500">
-                  {assignment.staffName} is covering {assignment.assignedQuantity} slot(s). Max concurrent: {assignment.staffMaxConcurrent}.
+                  {assignment.staffName} is covering{" "}
+                  {assignment.assignedQuantity} slot(s). Max concurrent:{" "}
+                  {assignment.staffMaxConcurrent}.
                 </p>
               </div>
             );

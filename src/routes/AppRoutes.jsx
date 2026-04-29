@@ -18,8 +18,18 @@ import MomoQrPage from "../features/payments/pages/MomoQrPage";
 import ServiceDetailPage from "../features/services/pages/ServiceDetailPage";
 import ServicesPage from "../features/services/pages/ServicesPage";
 import ProtectedRoute from "./ProtectedRoute";
-import { ROLE_GROUPS, ROUTE_PATHS } from "./routeConfig";
+import {
+  getDefaultPathForRole,
+  ROLE_GROUPS,
+  ROUTE_PATHS,
+} from "./routeConfig";
 import AdminBookingPage from "../features/admin/pages/AdminBookingPage";
+import { useAuth } from "../context/useAuth";
+
+function AdminIndexRedirect() {
+  const { user } = useAuth();
+  return <Navigate to={getDefaultPathForRole(user?.role)} replace />;
+}
 
 export default function AppRoutes() {
   return (
@@ -76,10 +86,7 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route
-          index
-          element={<Navigate to={ROUTE_PATHS.adminDashboard} replace />}
-        />
+        <Route index element={<AdminIndexRedirect />} />
         <Route
           path={ROUTE_PATHS.adminDashboard}
           element={

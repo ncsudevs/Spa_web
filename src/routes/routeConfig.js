@@ -24,3 +24,15 @@ export const ROUTE_PATHS = {
   adminPayments: "payments",
   adminCustomers: "customers",
 };
+
+export function getDefaultPathForRole(role) {
+  if (role === "ADMIN") {
+    return "/admin/dashboard";
+  }
+
+  if (role === "CASHIER") {
+    return "/admin/bookings";
+  }
+
+  return ROUTE_PATHS.home;
+}

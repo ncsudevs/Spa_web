@@ -69,11 +69,6 @@ export default function HomePage() {
                   ritual.
                 </h1>
 
-                <p className="mt-6 max-w-2xl text-base leading-8 text-stone-700 sm:text-lg">
-                  SuSpa is designed like a signature ritual: warm visuals,
-                  smooth actions, and a calm flow from discovery to payment.
-                </p>
-
                 <div className="mt-8 flex flex-wrap gap-4">
                   <Link
                     to="/services"
@@ -151,10 +146,6 @@ export default function HomePage() {
                   </p>
                   <p className="font-display mt-3 text-2xl text-stone-950">
                     Soft light, slow pace, full reset.
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-stone-600">
-                    The interface mirrors the service: clean, warm, and quietly
-                    confident.
                   </p>
                 </div>
 
