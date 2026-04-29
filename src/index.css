@@ -363,6 +363,30 @@ select[aria-invalid="true"],
   box-shadow: 0 12px 24px rgba(52, 30, 26, 0.08);
 }
 
+.skeleton-surface {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(236, 229, 223, 0.95), rgba(248, 242, 237, 0.98));
+}
+
+.skeleton-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.82),
+    transparent
+  );
+  animation: skeleton-sweep 1.5s ease-in-out infinite;
+}
+
+.toast-pop {
+  animation: toast-pop 0.28s ease both;
+}
+
 @keyframes reveal-up {
   from {
     opacity: 0;
@@ -443,6 +467,23 @@ select[aria-invalid="true"],
   }
 }
 
+@keyframes skeleton-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes toast-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal-section,
   .reveal-up,
@@ -451,7 +492,9 @@ select[aria-invalid="true"],
   .luxe-button::before,
   .cart-target.is-bouncing,
   .customer-shell::before,
-  .customer-shell::after {
+  .customer-shell::after,
+  .skeleton-surface::after,
+  .toast-pop {
     animation: none !important;
     transition: none !important;
   }

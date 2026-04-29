@@ -6,14 +6,18 @@ import {
   Wallet,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { getBookings } from "../api/bookingApi";
 import {
   confirmBankTransfer,
   createPayment,
   getLatestPaymentForBooking,
 } from "../../payments/api/paymentApi";
+import { useToast } from "../../../context/useToast";
 import AppButton from "../../../shared/components/AppButton";
+import EmptyState from "../../../shared/components/EmptyState";
+import ErrorState from "../../../shared/components/ErrorState";
+import SkeletonBlock from "../../../shared/components/SkeletonBlock";
 import StatusBadge from "../../../shared/components/StatusBadge";
 import { useAuth } from "../../../context/useAuth";
 import { clearCart } from "../../../shared/utils/customerStorage";
@@ -44,13 +48,6 @@ const paymentMethods = [
       "View the bank details, make the transfer, and confirm once it has been sent.",
   },
 ];
-
-function parseUtcDate(value) {
-  if (!value) return null;
-  const str = String(value);
-  const hasTimezone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(str);
-  return new Date(hasTimezone ? str : `${str}Z`);
-}
 
 function isSuccessfulMomoReturn(resultCode) {
   return resultCode === "0";
@@ -122,7 +119,6 @@ function PaymentInstructionCard({
   payment,
   confirming,
   creating,
-  canRetryPending,
   onConfirmTransfer,
   onResumeMomo,
 }) {
@@ -199,7 +195,7 @@ function PaymentInstructionCard({
 
               onResumeMomo(booking);
             }}
-            disabled={creating || (!hostedUrl && !canRetryPending)}
+            disabled={creating}
           >
             <ExternalLink className="h-4 w-4" />
             {creating ? "Preparing MoMo payment..." : "Continue to payment with MoMo"}
@@ -232,12 +228,6 @@ function PaymentInstructionCard({
         </div>
       ) : null}
 
-      {isMomo && isPending && !hostedUrl && !canRetryPending ? (
-        <p className="mt-3 text-sm text-amber-700">
-          This MoMo payment is no longer available. You can switch to bank transfer below.
-        </p>
-      ) : null}
-
       {!isMomo && isPending ? (
         <p className="mt-3 text-sm text-sky-700">
           We have received your confirmation and will review the transfer shortly.
@@ -247,8 +237,58 @@ function PaymentInstructionCard({
   );
 }
 
+function BookingListSkeleton() {
+  return (
+    <div className="mt-10 space-y-5">
+      {Array.from({ length: 2 }).map((_, index) => (
+        <article
+          key={index}
+          className="rounded-[28px] border border-stone-200 bg-white p-6"
+        >
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-3">
+                <SkeletonBlock className="h-8 w-36" />
+                <SkeletonBlock className="h-6 w-24 rounded-full" />
+                <SkeletonBlock className="h-6 w-24 rounded-full" />
+              </div>
+              <SkeletonBlock className="mt-4 h-4 w-4/5" />
+              <SkeletonBlock className="mt-3 h-4 w-2/3" />
+
+              <div className="mt-5 space-y-3">
+                {Array.from({ length: 2 }).map((__, itemIndex) => (
+                  <div
+                    key={itemIndex}
+                    className="rounded-2xl bg-stone-50 px-4 py-3"
+                  >
+                    <SkeletonBlock className="h-5 w-40" />
+                    <SkeletonBlock className="mt-3 h-4 w-32" />
+                    <SkeletonBlock className="mt-2 h-4 w-28" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="w-full max-w-sm rounded-[24px] border border-stone-200 p-4 lg:w-[320px]">
+              <SkeletonBlock className="h-4 w-12" />
+              <SkeletonBlock className="mt-3 h-8 w-28" />
+              <SkeletonBlock className="mt-4 h-4 w-32" />
+              <div className="mt-5 space-y-3">
+                <SkeletonBlock className="h-20 rounded-[22px]" />
+                <SkeletonBlock className="h-20 rounded-[22px]" />
+                <SkeletonBlock className="h-12 rounded-full" />
+              </div>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 export default function MyBookingsPage() {
   const location = useLocation();
+  const toast = useToast();
   const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [latestPayments, setLatestPayments] = useState({});
@@ -258,7 +298,6 @@ export default function MyBookingsPage() {
   const [notice, setNotice] = useState(() => buildReturnNotice(location));
   const [creatingBookingId, setCreatingBookingId] = useState(null);
   const [confirmingPaymentId, setConfirmingPaymentId] = useState(null);
-  const [now, setNow] = useState(() => Date.now());
 
   const locationNotice = useMemo(
     () => buildReturnNotice(location),
@@ -321,8 +360,6 @@ export default function MyBookingsPage() {
 
   useEffect(() => {
     loadBookings();
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
   }, [loadBookings]);
 
   function getSelectedMethod(booking) {
@@ -359,23 +396,35 @@ export default function MyBookingsPage() {
             ? `Payment ${payment.paymentCode} is ready. Continue to MoMo to finish paying for this booking.`
             : `Payment ${payment.paymentCode} is ready. Use the bank details below, then confirm after you have transferred.`,
       });
+      toast.success(
+        method === "MOMO" ? "MoMo payment is ready" : "Bank transfer is ready",
+        method === "MOMO"
+          ? `Payment ${payment.paymentCode} is ready and you will continue to MoMo next.`
+          : `Payment ${payment.paymentCode} is ready. Review the transfer details below.`,
+      );
 
       await loadBookings();
 
       if (method === "MOMO") {
         const hostedUrl = payment.payUrl || payment.qrCodeUrl || payment.deepLink;
 
-        if (hostedUrl) {
+      if (hostedUrl) {
           window.location.href = hostedUrl;
           return;
         }
 
-        setError(
-          "We could not reopen MoMo right now. Please try again or choose bank transfer.",
+        const message =
+          "We could not reopen MoMo right now. Please try again or choose bank transfer.";
+        setError(message);
+        toast.warning(
+          "MoMo is temporarily unavailable",
+          message,
         );
       }
     } catch (err) {
-      setError(err.message || "Cannot create payment.");
+      const message = err.message || "Cannot create payment.";
+      setError(message);
+      toast.error("Payment could not be created", message);
     } finally {
       setCreatingBookingId(null);
     }
@@ -392,9 +441,15 @@ export default function MyBookingsPage() {
         title: "Transfer confirmation received",
         description: `Payment ${updatedPayment.paymentCode} is now waiting for review.`,
       });
+      toast.success(
+        "Transfer confirmation received",
+        `Payment ${updatedPayment.paymentCode} is now waiting for review.`,
+      );
       await loadBookings();
     } catch (err) {
-      setError(err.message || "Cannot confirm transfer.");
+      const message = err.message || "Cannot confirm transfer.";
+      setError(message);
+      toast.error("Transfer confirmation failed", message);
     } finally {
       setConfirmingPaymentId(null);
     }
@@ -408,10 +463,10 @@ export default function MyBookingsPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-rose-500">
-              My Bookings
+              Bookings & Payment
             </p>
             <h1 className="mt-3 text-4xl font-semibold text-stone-900">
-              Your spa appointments
+              Your bookings and payment status
             </h1>
             <p className="mt-3 text-stone-600">Signed in as {user?.email}</p>
             <p className="mt-2 text-sm text-stone-500">
@@ -424,10 +479,14 @@ export default function MyBookingsPage() {
           </AppButton>
         </div>
 
-        {error ? (
-          <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            {error}
-          </div>
+        {error && bookings.length > 0 ? (
+          <ErrorState
+            className="mt-6"
+            title="We could not finish that booking step"
+            description={error}
+            actionLabel="Refresh bookings"
+            onAction={loadBookings}
+          />
         ) : null}
 
         <div className="mt-8 rounded-[28px] border border-stone-200 bg-stone-50 p-5">
@@ -443,15 +502,31 @@ export default function MyBookingsPage() {
         </div>
 
         {loading ? (
-          <div className="mt-10 rounded-[28px] border border-stone-200 bg-stone-50 p-10 text-center text-stone-500">
-            Loading bookings...
+          <BookingListSkeleton />
+        ) : error && bookings.length === 0 ? (
+          <div className="mt-10">
+            <ErrorState
+              title="We could not load your bookings"
+              description={error}
+              actionLabel="Try again"
+              onAction={loadBookings}
+            />
           </div>
         ) : bookings.length === 0 ? (
-          <div className="mt-10 rounded-[28px] border border-dashed border-stone-300 bg-stone-50 p-10 text-center">
-            <CalendarRange className="mx-auto h-10 w-10 text-rose-400" />
-            <p className="mt-4 text-stone-600">
-              No bookings found for your account yet.
-            </p>
+          <div className="mt-10">
+            <EmptyState
+              icon={CalendarRange}
+              title="No bookings yet"
+              description="Your appointments will appear here after you complete a booking."
+              action={
+                <Link
+                  to="/services"
+                  className="inline-flex rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-white"
+                >
+                  Browse services
+                </Link>
+              }
+            />
           </div>
         ) : (
           <div className="mt-10 space-y-5">
@@ -477,42 +552,14 @@ export default function MyBookingsPage() {
                 latestPayment?.deepLink ||
                 "";
 
-              const paymentAttempts = booking.paymentAttempts ?? 0;
-              const canRetryPending = paymentAttempts < 3;
-
               const appointmentDate = booking.appointmentDate
                 ? new Date(booking.appointmentDate)
                 : null;
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
               const isExpiredDate =
                 appointmentDate &&
-                appointmentDate < new Date(new Date(now).toDateString());
-
-              const lastPaymentCreated = booking.lastPaymentCreatedAt
-                ? parseUtcDate(booking.lastPaymentCreatedAt)
-                : booking.updatedAt
-                  ? parseUtcDate(booking.updatedAt)
-                  : parseUtcDate(booking.createdAt);
-
-              const expiresAt =
-                lastPaymentCreated != null
-                  ? lastPaymentCreated.getTime() + 5 * 60 * 1000
-                  : null;
-
-              const secondsLeft =
-                expiresAt && expiresAt > now
-                  ? Math.max(0, Math.floor((expiresAt - now) / 1000))
-                  : 0;
-
-              const countdown =
-                secondsLeft > 0
-                  ? `${Math.floor(secondsLeft / 60)
-                      .toString()
-                      .padStart(2, "0")}:${(secondsLeft % 60)
-                      .toString()
-                      .padStart(2, "0")}`
-                  : null;
-
-              const isTtlExpired = expiresAt != null && expiresAt <= now;
+                appointmentDate < today;
 
               const canCreateNewPayment =
                 !isExpiredDate &&
@@ -529,12 +576,7 @@ export default function MyBookingsPage() {
               const showPaymentActions =
                 !isRefunded && (canPay || isRejected || isCancelled || isMomoPending);
               const disablePrimaryPaymentAction =
-                creatingBookingId === booking.id ||
-                !canCreateNewPayment ||
-                (selectedMethod === "MOMO" &&
-                  isMomoPending &&
-                  !latestPaymentHostedUrl &&
-                  !canRetryPending);
+                creatingBookingId === booking.id || !canCreateNewPayment;
 
               return (
                 <article
@@ -630,7 +672,6 @@ export default function MyBookingsPage() {
                         payment={latestPayment}
                         confirming={confirmingPaymentId === latestPayment?.id}
                         creating={creatingBookingId === booking.id}
-                        canRetryPending={canRetryPending}
                         onConfirmTransfer={handleConfirmTransfer}
                         onResumeMomo={handleCreatePayment}
                       />
@@ -731,15 +772,9 @@ export default function MyBookingsPage() {
                             </p>
                           ) : selectedMethod === "MOMO" ? (
                             <p className="text-xs text-stone-500">
-                              {!latestPaymentHostedUrl && !canRetryPending
-                                ? "MoMo is no longer available for this payment. You can switch to bank transfer instead."
-                                : isMomoPending
-                                  ? countdown
-                                    ? `If you closed MoMo or your browser, continue here to reopen payment. This payment window ends in ${countdown}.`
-                                    : isTtlExpired
-                                      ? "Your previous MoMo payment window has expired. Continue here to start a new one."
-                                      : "If you left MoMo before finishing, continue here to go back to payment."
-                                  : "You will be redirected to MoMo to finish your payment."}
+                              {isMomoPending
+                                ? "If you left MoMo before finishing, continue here to reopen the payment page."
+                                : "You will be redirected to MoMo to finish your payment."}
                             </p>
                           ) : (
                             <p className="text-xs text-stone-500">

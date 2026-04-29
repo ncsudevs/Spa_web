@@ -2,7 +2,6 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AdminLayout from "../layouts/AdminLayout";
 import CustomerLayout from "../layouts/CustomerLayout";
 import DashboardPage from "../features/admin/pages/DashboardPage";
-import LogsPage from "../features/admin/pages/LogsPage";
 import AdminPaymentPage from "../features/admin/pages/AdminPaymentPage";
 import AdminCustomersPage from "../features/admin/pages/AdminCustomersPage";
 import AdminServiceCategoryPage from "../features/admin/pages/AdminServiceCategoryPage";
@@ -76,7 +75,7 @@ export default function AppRoutes() {
       >
         <Route
           index
-          element={<Navigate to={ROUTE_PATHS.adminDashboard} replace />}
+          element={<Navigate to={ROUTE_PATHS.adminBookings} replace />}
         />
         <Route
           path={ROUTE_PATHS.adminDashboard}
@@ -119,14 +118,6 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute roles={ROLE_GROUPS.admin}>
               <AdminCustomersPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path={ROUTE_PATHS.adminLogs}
-          element={
-            <ProtectedRoute roles={ROLE_GROUPS.admin}>
-              <LogsPage />
             </ProtectedRoute>
           }
         />

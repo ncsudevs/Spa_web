@@ -7,16 +7,10 @@ import {
   User,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/useAuth";
 import { readCart } from "../../../shared/utils/customerStorage";
-
-const navItems = [
-  { to: "/", label: "Home" },
-  { to: "/services", label: "Services" },
-  { to: "/my-bookings", label: "My Bookings" },
-];
 
 export default function CustomerNav() {
   const [cartCount, setCartCount] = useState(0);
@@ -25,6 +19,20 @@ export default function CustomerNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
+  const isCustomer = user?.role === "CUSTOMER";
+  const isManagementUser = user?.role === "ADMIN" || user?.role === "CASHIER";
+  const navItems = useMemo(() => {
+    const items = [
+      { to: "/", label: "Home" },
+      { to: "/services", label: "Services" },
+    ];
+
+    if (isCustomer) {
+      items.push({ to: "/my-bookings", label: "Bookings & Payment" });
+    }
+
+    return items;
+  }, [isCustomer]);
 
   useEffect(() => {
     const syncCart = () => {
@@ -109,12 +117,12 @@ export default function CustomerNav() {
                     <span className="text-stone-500">Hello, </span>
                     <span className="font-semibold">{user?.fullName}</span>
                   </div>
-                  {user?.role === "ADMIN" && (
+                  {isManagementUser && (
                     <Link
-                      to="/admin/dashboard"
+                      to="/admin/bookings"
                       className="inline-flex items-center gap-2 rounded-full border border-stone-200/70 bg-white/70 px-4 py-2 text-sm font-semibold text-stone-800 transition hover:border-rose-200 hover:text-rose-700"
                     >
-                      Admin
+                      {user?.role === "CASHIER" ? "Cashier" : "Admin"}
                       <ArrowUpRight className="h-4 w-4" />
                     </Link>
                   )}
@@ -144,20 +152,22 @@ export default function CustomerNav() {
                 </div>
               )}
 
-              <Link
-                to="/cart"
-                data-cart-target
-                className={`cart-target relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-200/70 bg-white/70 text-stone-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 ${
-                  isCartBouncing ? "is-bouncing" : ""
-                }`}
-              >
-                <ShoppingBag className="h-5 w-5" />
-                {cartCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,#d9637b,#f3a05f)] px-1 text-[10px] font-bold text-white shadow-md">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
+              {!isAuthenticated || isCustomer ? (
+                <Link
+                  to="/cart"
+                  data-cart-target
+                  className={`cart-target relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-200/70 bg-white/70 text-stone-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 ${
+                    isCartBouncing ? "is-bouncing" : ""
+                  }`}
+                >
+                  <ShoppingBag className="h-5 w-5" />
+                  {cartCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[linear-gradient(135deg,#d9637b,#f3a05f)] px-1 text-[10px] font-bold text-white shadow-md">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+              ) : null}
 
               <button
                 type="button"
@@ -204,13 +214,15 @@ export default function CustomerNav() {
                       </p>
                     </div>
                   </div>
-                  {user?.role === "ADMIN" ? (
+                  {isManagementUser ? (
                     <Link
-                      to="/admin/dashboard"
+                      to="/admin/bookings"
                       onClick={() => setIsOpen(false)}
                       className="mt-3 flex items-center justify-between rounded-2xl border border-stone-200/70 px-4 py-3 text-sm font-semibold text-stone-800"
                     >
-                      Admin dashboard
+                      {user?.role === "CASHIER"
+                        ? "Cashier workspace"
+                        : "Admin workspace"}
                       <ArrowUpRight className="h-4 w-4" />
                     </Link>
                   ) : null}

@@ -8,6 +8,7 @@ import { useAuth } from "../../../context/useAuth";
 import useFormErrorAssist from "../../../shared/hooks/useFormErrorAssist";
 import { formatCurrency, formatDate } from "../../../shared/utils/formatters";
 import {
+  clearCart,
   clearSelectedBookingItems,
   getSelectedBookingItems,
   readCart,
@@ -698,6 +699,7 @@ export default function BookingPage() {
       };
 
       const booking = await createBooking(payload);
+      clearCart();
       clearSelectedBookingItems();
       navigate("/my-bookings", {
         state: {

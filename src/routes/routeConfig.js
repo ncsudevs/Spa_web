@@ -23,5 +23,4 @@ export const ROUTE_PATHS = {
   adminBookings: "bookings",
   adminPayments: "payments",
   adminCustomers: "customers",
-  adminLogs: "logs",
 };

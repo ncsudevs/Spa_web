@@ -12,13 +12,16 @@ import {
   Wallet,
   UsersRound,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import SmartServiceImage from "../components/SmartServiceImage";
 import { getServiceById } from "../api/serviceApi";
 import { useServices } from "../hooks/useServices";
 import { mapServiceForUi } from "../utils/serviceMappers";
+import { useToast } from "../../../context/useToast";
+import ErrorState from "../../../shared/components/ErrorState";
 import RevealSection from "../../../shared/components/RevealSection";
+import SkeletonBlock from "../../../shared/components/SkeletonBlock";
 import { launchCartFlight } from "../../../shared/utils/cartMotion";
 import { formatCurrency } from "../../../shared/utils/formatters";
 import {
@@ -188,9 +191,51 @@ function ReviewCard({ review }) {
   );
 }
 
+function ServiceDetailSkeleton() {
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="space-y-6">
+          <SkeletonBlock className="aspect-[5/4] rounded-[32px]" />
+          <div className="grid gap-4 md:grid-cols-[1.05fr_0.95fr]">
+            <SkeletonBlock className="h-56 rounded-[28px]" />
+            <SkeletonBlock className="h-56 rounded-[28px]" />
+          </div>
+        </div>
+
+        <div className="rounded-[32px] border border-white/70 bg-white/92 p-8 shadow-[0_24px_60px_rgba(45,27,23,0.08)] lg:p-10">
+          <SkeletonBlock className="h-7 w-28 rounded-full" />
+          <SkeletonBlock className="mt-5 h-12 w-4/5" />
+          <SkeletonBlock className="mt-4 h-4 w-full" />
+          <SkeletonBlock className="mt-3 h-4 w-11/12" />
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="rounded-3xl bg-stone-50 p-4">
+                <SkeletonBlock className="h-5 w-5 rounded-full" />
+                <SkeletonBlock className="mt-4 h-4 w-16" />
+                <SkeletonBlock className="mt-3 h-6 w-24" />
+                <SkeletonBlock className="mt-3 h-4 w-full" />
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 grid gap-4 lg:grid-cols-2">
+            <SkeletonBlock className="h-60 rounded-[28px]" />
+            <SkeletonBlock className="h-60 rounded-[28px]" />
+          </div>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <SkeletonBlock className="h-14 rounded-full" />
+            <SkeletonBlock className="h-14 rounded-full" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ServiceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -206,23 +251,24 @@ export default function ServiceDetailPage() {
   const navigationTimeoutRef = useRef(0);
   const { services } = useServices({ mapForUi: true });
 
-  useEffect(() => {
-    async function loadServiceDetail() {
-      try {
-        setLoading(true);
-        setError("");
-        const data = await getServiceById(id);
-        setService(mapServiceForUi(data));
-      } catch (err) {
-        console.error("Cannot load service detail:", err);
-        setError(err.message || "Service not found.");
-      } finally {
-        setLoading(false);
-      }
+  const loadServiceDetail = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await getServiceById(id);
+      setService(mapServiceForUi(data));
+    } catch (err) {
+      console.error("Cannot load service detail:", err);
+      setService(null);
+      setError(err.message || "Service not found.");
+    } finally {
+      setLoading(false);
     }
-
-    loadServiceDetail();
   }, [id]);
+
+  useEffect(() => {
+    loadServiceDetail();
+  }, [loadServiceDetail]);
 
   useEffect(() => {
     const node = primaryCtaRef.current;
@@ -332,6 +378,15 @@ export default function ServiceDetailPage() {
           label: service.name,
         });
         addToCart(service);
+        toast.success(
+          "Added to cart",
+          `${service.name} is ready for booking.`,
+        );
+      } else {
+        toast.info(
+          "Ready for booking",
+          `${service.name} is already in your cart, so we kept your selection and moved you to booking.`,
+        );
       }
 
       saveSelectedBookingItems([service.id]);
@@ -348,6 +403,12 @@ export default function ServiceDetailPage() {
       label: service.name,
     });
     addToCart(service);
+    toast.success(
+      alreadyInCart ? "Cart updated" : "Added to cart",
+      alreadyInCart
+        ? `${service.name} quantity was increased in your cart.`
+        : `${service.name} was added to your cart.`,
+    );
   }
 
   function nudgeCarousel(ref, offset) {
@@ -357,26 +418,26 @@ export default function ServiceDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="mx-auto max-w-4xl px-4 py-20 text-center text-stone-500">
-        Loading service detail...
-      </div>
-    );
+    return <ServiceDetailSkeleton />;
   }
 
   if (!service || !serviceSummary) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-20 text-center">
-        <h1 className="text-3xl font-semibold text-stone-900">
-          Service not found
-        </h1>
-        <p className="mt-3 text-stone-600">{error}</p>
-        <Link
-          to="/services"
-          className="mt-6 inline-flex rounded-full bg-stone-950 px-5 py-3 text-white"
-        >
-          Back to services
-        </Link>
+      <div className="mx-auto max-w-4xl px-4 py-20">
+        <ErrorState
+          title="We could not open this service"
+          description={error || "This treatment may no longer be available."}
+          actionLabel="Try again"
+          onAction={loadServiceDetail}
+        />
+        <div className="mt-5">
+          <Link
+            to="/services"
+            className="inline-flex rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-white"
+          >
+            Back to services
+          </Link>
+        </div>
       </div>
     );
   }

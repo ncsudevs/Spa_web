@@ -1,35 +1,14 @@
 import {
-  Activity,
   CalendarCheck2,
   CreditCard,
-  FileText,
-  LayoutDashboard,
   LogOut,
-  Scissors,
-  Tags,
-  UserRound,
-  Users,
+  Activity,
   X,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/useAuth";
 
 const menu = [
-  {
-    to: "/admin/dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    roles: ["ADMIN", "CASHIER"],
-  },
-  {
-    to: "/admin/service-categories",
-    label: "Service Categories",
-    icon: Tags,
-    roles: ["ADMIN"],
-  },
-  { to: "/admin/services", label: "Services", icon: Scissors, roles: ["ADMIN"] },
-  { to: "/admin/customers", label: "Customers", icon: Users, roles: ["ADMIN"] },
-  { to: "/admin/staff", label: "Staff", icon: UserRound, roles: ["ADMIN"] },
   {
     to: "/admin/bookings",
     label: "Bookings",
@@ -42,7 +21,6 @@ const menu = [
     icon: CreditCard,
     roles: ["ADMIN", "CASHIER"],
   },
-  { to: "/admin/logs", label: "Logs", icon: FileText, roles: ["ADMIN"] },
 ];
 
 function SidebarContent({
