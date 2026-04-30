@@ -17,6 +17,8 @@ import { useAuth } from "../../../context/useAuth";
 const STATUS_OPTIONS = getBookingStatusOptions();
 
 function isStatusDisabled(booking, status) {
+  // Mirror the backend guard rules in the UI so invalid transitions are hidden
+  // before a cashier/admin spends time triggering a request that will fail.
   if (status === booking.status) return false;
   if (booking.status === "CANCELLED") return true;
 
@@ -71,6 +73,8 @@ export default function AdminBookingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyKey, setBusyKey] = useState("");
+  // Draft maps let every booking row keep its own local assignment editor
+  // state without forcing the whole page into a form library.
   const [newAssignmentDrafts, setNewAssignmentDrafts] = useState({});
   const [editAssignmentDrafts, setEditAssignmentDrafts] = useState({});
 
@@ -89,6 +93,8 @@ export default function AdminBookingPage() {
     try {
       setLoading(true);
       setError("");
+      // Bookings and staff have to be hydrated together because staffing
+      // editors depend on category-qualified staff options.
       const [bookingData, staffData] = await Promise.all([getBookings(), getStaff()]);
       setItems(bookingData || []);
       setStaff(staffData || []);
@@ -169,6 +175,8 @@ export default function AdminBookingPage() {
     try {
       setBusyKey(`checkin-${booking.id}`);
       setError("");
+      // The backend may promote the booking to COMPLETED in this same request
+      // once payment + staffing rules are satisfied.
       const updated = await updateBookingCheckIn(booking.id, isCheckedIn);
       replaceBooking(updated);
     } catch (err) {

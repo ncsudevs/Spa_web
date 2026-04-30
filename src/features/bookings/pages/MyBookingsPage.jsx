@@ -61,6 +61,8 @@ function buildReturnNotice(location) {
   const resultMessage = searchParams.get("message");
 
   if (resultCode != null) {
+    // The return URL is advisory only; the final payment state still comes from
+    // the backend after IPN/verification updates the booking.
     return isSuccessfulMomoReturn(resultCode)
         ? {
           tone: "success",
@@ -311,6 +313,8 @@ export default function MyBookingsPage() {
   const syncSelectedMethods = useCallback((nextBookings) => {
     setSelectedMethods((current) => {
       const next = { ...current };
+      // Keep the user's method preference sticky per booking so a refresh does
+      // not bounce the action button back to a different payment type.
       for (const booking of nextBookings) {
         if (!next[booking.id]) {
           next[booking.id] = booking.latestPaymentMethod || "MOMO";
@@ -328,6 +332,8 @@ export default function MyBookingsPage() {
       return;
     }
 
+    // Payments are fetched separately because booking cards need richer
+    // instruction data than the booking summary DTO carries by default.
     const results = await Promise.allSettled(
       bookingsWithPayments.map((booking) => getLatestPaymentForBooking(booking.id)),
     );
@@ -408,7 +414,7 @@ export default function MyBookingsPage() {
       if (method === "MOMO") {
         const hostedUrl = payment.payUrl || payment.qrCodeUrl || payment.deepLink;
 
-      if (hostedUrl) {
+        if (hostedUrl) {
           window.location.href = hostedUrl;
           return;
         }
@@ -578,6 +584,8 @@ export default function MyBookingsPage() {
               const disablePrimaryPaymentAction =
                 creatingBookingId === booking.id || !canCreateNewPayment;
 
+              // The customer card derives CTA visibility from booking/payment
+              // state so the page stays readable even when a payment is mid-flow.
               return (
                 <article
                   key={booking.id}
