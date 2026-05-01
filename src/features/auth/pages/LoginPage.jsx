@@ -26,7 +26,8 @@ export default function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { errorRef, formProps, skipNextErrorScroll } = useFormErrorAssist(error);
+  const { errorRef, formProps, skipNextErrorScroll } =
+    useFormErrorAssist(error);
 
   function clearFieldError(fieldName) {
     setFieldErrors((current) => {
@@ -89,7 +90,9 @@ export default function LoginPage() {
         return;
       }
 
-      setError(getAuthGeneralErrorMessage(err, "Login failed. Please try again."));
+      setError(
+        getAuthGeneralErrorMessage(err, "Login failed. Please try again."),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -119,9 +122,13 @@ export default function LoginPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16 sm:px-6 lg:px-8">
       <div className="rounded-[32px] bg-white p-8 shadow-sm lg:p-10">
-        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-rose-500">Account</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-rose-500">
+          Account
+        </p>
         <h1 className="mt-3 text-4xl font-semibold text-stone-900">Login</h1>
-        <p className="mt-3 text-stone-600">Sign in to book appointments and manage your bookings.</p>
+        <p className="mt-3 text-stone-600">
+          Sign in to book appointments and manage your bookings.
+        </p>
 
         <form
           noValidate
@@ -168,17 +175,10 @@ export default function LoginPage() {
 
         <p className="mt-6 text-sm text-stone-600">
           Don't have an account?{" "}
-          <Link to="/register" className="font-semibold text-rose-600">Register</Link>
+          <Link to="/register" className="font-semibold text-rose-600">
+            Register
+          </Link>
         </p>
-
-        <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600">
-          <p className="font-semibold text-stone-900">Admin account</p>
-          <p>Email: admin@suspa.local</p>
-          <p>Password: Admin@123</p>
-          <p className="mt-3 font-semibold text-stone-900">Cashier account</p>
-          <p>Email: cashier@suspa.local</p>
-          <p>Password: Cashier@123</p>
-        </div>
       </div>
     </div>
   );
