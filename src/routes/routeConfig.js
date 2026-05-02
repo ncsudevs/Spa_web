@@ -26,6 +26,8 @@ export const ROUTE_PATHS = {
 };
 
 export function getDefaultPathForRole(role) {
+  // Cashier cannot access the admin-only dashboard, so the booking queue is
+  // the safest default landing page for that role.
   if (role === "ADMIN") {
     return "/admin/dashboard";
   }

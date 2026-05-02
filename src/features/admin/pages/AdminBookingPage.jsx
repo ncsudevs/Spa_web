@@ -112,6 +112,8 @@ export default function AdminBookingPage() {
   }
 
   function getStaffOptions(categoryId) {
+    // Staff options are filtered by category so the UI mirrors the backend
+    // rule that only matching skills can be assigned.
     return activeStaff.filter((person) => person.categoryIds?.includes(categoryId));
   }
 

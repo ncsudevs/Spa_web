@@ -71,10 +71,13 @@ function buildSelectedCart(cart, selectedServiceIds) {
     ? selectedServiceIds
     : cart.map((item) => item.service.id);
 
+  // Booking only works with the services explicitly selected from the cart.
   return cart.filter((item) => effectiveIds.includes(item.service.id));
 }
 
 function buildPersonalUnits(selectedCart) {
+  // Personal mode splits quantity into one UI row per person/service unit so
+  // each slot can be validated independently.
   return selectedCart.flatMap((item) =>
     Array.from({ length: item.quantity }, (_, index) => ({
       key: `${item.service.id}-${index + 1}`,
@@ -377,6 +380,8 @@ export default function BookingPage() {
 
     let cancelled = false;
 
+    // Availability calls are debounced because date/time pickers can change in
+    // quick succession while the user is still choosing a slot.
     const timer = setTimeout(async () => {
       try {
         const results = await Promise.all(
@@ -519,6 +524,8 @@ export default function BookingPage() {
   function validatePersonalAppointments() {
     const seenSlots = new Map();
 
+    // Personal bookings cannot overlap inside the same order because one
+    // customer cannot consume two services at the exact same moment.
     for (const item of bookingUnits) {
       const current = appointments[item.key];
 
@@ -586,6 +593,8 @@ export default function BookingPage() {
   function validateGroupBooking() {
     const selectedItem = selectedCart[0];
 
+    // Group mode intentionally keeps one shared service + one shared slot so
+    // capacity math stays predictable for this project scope.
     if (!selectedItem) {
       return {
         mode: "general",
@@ -672,6 +681,8 @@ export default function BookingPage() {
     try {
       setSubmitting(true);
 
+      // The payload mirrors the backend DTO: one shared line for group mode,
+      // or one line per personal booking unit otherwise.
       const payload = {
         fullName: form.fullName.trim(),
         phone: normalizePhoneInput(form.phone),

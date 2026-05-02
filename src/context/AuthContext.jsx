@@ -19,6 +19,8 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(() => isAuthenticated());
 
   useEffect(() => {
+    // Keep auth state in sync when login/logout happens in another tab or
+    // when storage helpers dispatch the custom authChanged event locally.
     const sync = () => {
       setUser(getCurrentUser());
       setToken(getToken());
@@ -40,6 +42,8 @@ export function AuthProvider({ children }) {
       }
 
       try {
+        // Rehydrate the current user from /me so stale profile data in local
+        // storage does not survive across backend-side account changes.
         const me = await getMe();
         saveAuth({ token, user: me });
         setUser(me);
@@ -57,6 +61,7 @@ export function AuthProvider({ children }) {
 
   async function login(payload) {
     const data = await loginApi(payload);
+    // Save both token and profile together so route guards can resolve in one pass.
     saveAuth(data);
     setUser(data.user);
     setToken(data.token);

@@ -26,6 +26,8 @@ export async function http(url, options = {}) {
   const isFormData = options.body instanceof FormData;
   const token = getToken();
 
+  // Attach JSON and auth headers by default so feature APIs only need to
+  // provide the endpoint and payload.
   const headers = {
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -49,6 +51,8 @@ export async function http(url, options = {}) {
 
   if (!res.ok) {
     if (res.status === 401) {
+      // Any unauthorized response invalidates the local session to avoid
+      // leaving the UI in a half-authenticated state.
       clearAuth();
     }
 

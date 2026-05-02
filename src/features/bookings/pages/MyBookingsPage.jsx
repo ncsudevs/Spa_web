@@ -412,6 +412,7 @@ export default function MyBookingsPage() {
       await loadBookings();
 
       if (method === "MOMO") {
+        // Redirect immediately after the backend creates the hosted payment URL.
         const hostedUrl = payment.payUrl || payment.qrCodeUrl || payment.deepLink;
 
         if (hostedUrl) {
@@ -440,6 +441,8 @@ export default function MyBookingsPage() {
     try {
       setConfirmingPaymentId(paymentId);
       setError("");
+      // Bank transfer stays in-app, so the customer only submits a review
+      // request and waits for cashier confirmation.
       const updatedPayment = await confirmBankTransfer(paymentId);
       setLatestPayments((current) => ({ ...current, [bookingId]: updatedPayment }));
       setNotice({

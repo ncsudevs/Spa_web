@@ -14,6 +14,8 @@ export default function ProtectedRoute({ children, roles }) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
+  // Role mismatch redirects to the best landing page for that account instead
+  // of dumping the user back to a generic home screen.
   if (roles?.length && !roles.includes(user?.role)) {
     return <Navigate to={getDefaultPathForRole(user?.role)} replace />;
   }
