@@ -1,4 +1,4 @@
-import {
+﻿import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
@@ -648,21 +648,24 @@ export default function ServiceDetailPage() {
         </div>
       </RevealSection>
 
-      <div className="mt-14 grid items-start gap-8 xl:grid-cols-[1.05fr_0.95fr]">
-        <RevealSection as="section" duration={0.62}>
-          <div className="rounded-[36px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_60px_rgba(45,27,23,0.08)] sm:p-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-rose-600">
-              Questions
-            </p>
-            <h2 className="font-display mt-3 text-[2.55rem] leading-[0.98] text-stone-950 sm:text-[3rem]">
-              Answers before you book
-            </h2>
-            <p className="mt-4 max-w-md text-sm leading-7 text-stone-600">
-              The essentials are right here, so the decision feels clearer before
-              you move into booking.
-            </p>
+      <RevealSection as="section" className="mt-14" duration={0.62}>
+        <div className="rounded-[36px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_60px_rgba(45,27,23,0.08)] sm:p-8">
+          <div className="grid gap-8 xl:grid-cols-[0.42fr_0.58fr] xl:items-start">
+            <div className="max-w-xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-rose-600">
+                Questions
+              </p>
+              <h2 className="font-display mt-3 text-[2.55rem] leading-[0.98] text-stone-950 sm:text-[3rem]">
+                Answers before you book
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-stone-600">
+                The essentials are right here, so the decision feels clearer before
+                you move into booking. We keep the answers short, practical, and
+                closely tied to how the appointment really works.
+              </p>
+            </div>
 
-            <div className="mt-8 space-y-3">
+            <div className="space-y-3">
               {faqEntries.map((item, index) => {
                 const isOpen = activeFaq === index;
                 return (
@@ -701,9 +704,10 @@ export default function ServiceDetailPage() {
               })}
             </div>
           </div>
-        </RevealSection>
+        </div>
+      </RevealSection>
 
-        <RevealSection as="section" duration={0.68}>
+      <RevealSection as="section" className="mt-14" duration={0.68}>
           <div className="rounded-[36px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(248,238,229,0.9))] p-6 shadow-[0_24px_60px_rgba(45,27,23,0.08)] sm:p-8">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
@@ -782,7 +786,6 @@ export default function ServiceDetailPage() {
             </div>
           </div>
         </RevealSection>
-      </div>
 
       {relatedServices.length > 0 ? (
         <RevealSection as="section" className="mt-14" duration={0.66}>
@@ -882,3 +885,4 @@ export default function ServiceDetailPage() {
     </div>
   );
 }
+
