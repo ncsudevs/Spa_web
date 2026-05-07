@@ -24,6 +24,8 @@ export default function CustomerNav() {
   const { isAuthenticated, user, logout } = useAuth();
   const isCustomer = user?.role === "CUSTOMER";
   const isManagementUser = user?.role === "ADMIN" || user?.role === "CASHIER";
+  const displayedPendingPaymentCount =
+    isAuthenticated && isCustomer ? pendingPaymentCount : 0;
   const navItems = useMemo(() => {
     const items = [
       { to: "/", label: "Home" },
@@ -38,10 +40,7 @@ export default function CustomerNav() {
   }, [isCustomer]);
 
   useEffect(() => {
-    if (!isAuthenticated || !isCustomer) {
-      setPendingPaymentCount(0);
-      return undefined;
-    }
+    if (!isAuthenticated || !isCustomer) return undefined;
 
     let ignore = false;
 
@@ -145,7 +144,7 @@ export default function CustomerNav() {
                     >
                       <span className="inline-flex items-center gap-2">
                         {item.label}
-                        {item.to === "/my-bookings" && pendingPaymentCount > 0 ? (
+                        {item.to === "/my-bookings" && displayedPendingPaymentCount > 0 ? (
                           <span className="inline-flex items-center justify-center rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-700">
                             !
                           </span>
@@ -246,7 +245,7 @@ export default function CustomerNav() {
                 >
                   <span className="inline-flex items-center gap-2">
                     {item.label}
-                    {item.to === "/my-bookings" && pendingPaymentCount > 0 ? (
+                    {item.to === "/my-bookings" && displayedPendingPaymentCount > 0 ? (
                       <CircleAlert className="h-4 w-4 text-amber-600" />
                     ) : null}
                   </span>

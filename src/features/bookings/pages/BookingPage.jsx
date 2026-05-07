@@ -247,7 +247,6 @@ function mapSchedulingServerError({
   bookingMode,
   bookingUnits,
   appointments,
-  groupSchedule,
 }) {
   const normalized = String(message || "").toLowerCase();
   const schedule = extractServerSchedule(message);
@@ -798,7 +797,6 @@ export default function BookingPage() {
           bookingMode,
           bookingUnits,
           appointments,
-          groupSchedule,
         });
 
       if (serverIssue) {

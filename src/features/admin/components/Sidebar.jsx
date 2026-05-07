@@ -159,12 +159,12 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
     () => ["ADMIN", "CASHIER"].includes(user?.role),
     [user?.role],
   );
+  const displayedStaffingAlertCount = canTrackStaffingAlerts
+    ? staffingAlertCount
+    : 0;
 
   useEffect(() => {
-    if (!canTrackStaffingAlerts) {
-      setStaffingAlertCount(0);
-      return undefined;
-    }
+    if (!canTrackStaffingAlerts) return undefined;
 
     let ignore = false;
 
@@ -225,7 +225,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
           onLogout={handleLogout}
           user={user}
           visibleMenu={visibleMenu}
-          staffingAlertCount={staffingAlertCount}
+          staffingAlertCount={displayedStaffingAlertCount}
         />
       </aside>
 
@@ -235,7 +235,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
           onLogout={handleLogout}
           user={user}
           visibleMenu={visibleMenu}
-          staffingAlertCount={staffingAlertCount}
+          staffingAlertCount={displayedStaffingAlertCount}
         />
       </aside>
     </>
