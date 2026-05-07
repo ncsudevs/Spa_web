@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   deletePayment,
   getPayments,
@@ -23,11 +23,34 @@ export default function PaymentPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [busyKey, setBusyKey] = useState("");
   const [refundDrafts, setRefundDrafts] = useState({});
   const [openRefundId, setOpenRefundId] = useState(null);
 
   const canDelete = user?.role === "ADMIN";
+
+  const filteredItems = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return items;
+
+    return items.filter((item) =>
+      [
+        item.paymentCode,
+        item.transactionCode,
+        item.bookingCode,
+        item.providerName,
+        item.accountNumber,
+        item.accountName,
+        item.paymentContent,
+        item.method,
+        item.status,
+        item.amount,
+      ]
+        .filter((value) => value !== null && value !== undefined && value !== "")
+        .some((value) => String(value).toLowerCase().includes(keyword)),
+    );
+  }, [items, searchTerm]);
 
   useEffect(() => {
     loadData();
@@ -111,9 +134,17 @@ export default function PaymentPage() {
             MoMo payments update from IPN. Bank transfers move from customer confirmation to cashier review, then to paid.
           </p>
         </div>
-        <AppButton variant="ghost" onClick={loadData} disabled={loading}>
-          Refresh
-        </AppButton>
+        <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto">
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by payment code, booking code, method, or status"
+            className="min-w-[260px] flex-1 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-rose-300 lg:w-[360px] lg:flex-none"
+          />
+          <AppButton variant="ghost" onClick={loadData} disabled={loading}>
+            Refresh
+          </AppButton>
+        </div>
       </div>
 
       {error ? (
@@ -152,8 +183,14 @@ export default function PaymentPage() {
                   No payments yet.
                 </td>
               </tr>
+            ) : filteredItems.length === 0 ? (
+              <tr>
+                <td colSpan="8" className="p-5 text-sm text-stone-500">
+                  No payments match your search.
+                </td>
+              </tr>
             ) : (
-              items.map((item) => {
+              filteredItems.map((item) => {
                 const isMomo = item.method === "MOMO";
                 const isAwaitingTransfer = item.status === "AWAITING_TRANSFER";
                 const statusLocked = isMomo || isAwaitingTransfer;

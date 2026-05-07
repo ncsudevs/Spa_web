@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FolderOpen, Edit, Plus, Trash2 } from "lucide-react";
 import { createCategory, deleteCategory, updateCategory } from "../../services/api/serviceCategoryApi";
 import AppButton from "../../../shared/components/AppButton";
@@ -11,10 +11,22 @@ import { useServiceCategories } from "../../services/hooks/useServiceCategories"
 export default function ServiceCategoryPage() {
   const { categories: items, loading, error: loadError, reload } = useServiceCategories();
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+
+  const filteredItems = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return items;
+
+    return items.filter((category) =>
+      [category.name, category.description]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword)),
+    );
+  }, [items, searchTerm]);
 
   function openCreate() {
     setEditingId(null);
@@ -85,6 +97,15 @@ export default function ServiceCategoryPage() {
         actions={<AppButton onClick={openCreate}><Plus size={18} /> Add category</AppButton>}
       />
 
+      <div className="mb-4 max-w-md">
+        <input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by category name or description"
+          className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-rose-300"
+        />
+      </div>
+
       {error || loadError ? <p className="mb-4 text-sm text-red-600">{error || loadError}</p> : null}
 
       <SectionCard
@@ -100,6 +121,8 @@ export default function ServiceCategoryPage() {
             description="Create categories first so services can be grouped neatly for admins and customers."
             action={<AppButton onClick={openCreate}><Plus size={16} /> Add category</AppButton>}
           />
+        ) : filteredItems.length === 0 ? (
+          <div className="py-8 text-sm text-stone-500">No categories match your search.</div>
         ) : (
           <TableScrollFrame scrollAreaClassName="overflow-x-auto">
             <table className="w-full min-w-[700px]">
@@ -111,8 +134,8 @@ export default function ServiceCategoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((category, index) => (
-                  <tr key={category.id} className={index !== items.length - 1 ? 'border-b border-stone-100' : ''}>
+                {filteredItems.map((category, index) => (
+                  <tr key={category.id} className={index !== filteredItems.length - 1 ? 'border-b border-stone-100' : ''}>
                     <td className="p-4 font-medium text-stone-900">{category.name}</td>
                     <td className="p-4 text-stone-600">{category.description || '-'}</td>
                     <td className="p-4">

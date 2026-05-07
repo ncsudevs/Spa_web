@@ -72,6 +72,7 @@ export default function AdminBookingPage() {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [busyKey, setBusyKey] = useState("");
   // Draft maps let every booking row keep its own local assignment editor
   // state without forcing the whole page into a form library.
@@ -86,6 +87,31 @@ export default function AdminBookingPage() {
     () => staff.filter((item) => item.isActive),
     [staff],
   );
+
+  const filteredItems = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return items;
+
+    return items.filter((booking) =>
+      [
+        booking.bookingCode,
+        booking.fullName,
+        booking.email,
+        booking.phone,
+        booking.status,
+        booking.paymentStatus,
+        booking.workflowStatus,
+        ...(booking.items || []).flatMap((item) => [
+          item.serviceName,
+          item.categoryName,
+          item.appointmentDate,
+          item.appointmentTime,
+        ]),
+      ]
+        .filter((value) => value !== null && value !== undefined && value !== "")
+        .some((value) => String(value).toLowerCase().includes(keyword)),
+    );
+  }, [items, searchTerm]);
 
   const canDelete = user?.role === "ADMIN";
 
@@ -287,9 +313,17 @@ export default function AdminBookingPage() {
             staffed.
           </p>
         </div>
-        <AppButton variant="ghost" onClick={loadData} disabled={loading}>
-          Refresh
-        </AppButton>
+        <div className="flex w-full flex-wrap items-center gap-3 lg:w-auto">
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by booking code, customer, service, or status"
+            className="min-w-[260px] flex-1 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-rose-300 lg:w-[360px] lg:flex-none"
+          />
+          <AppButton variant="ghost" onClick={loadData} disabled={loading}>
+            Refresh
+          </AppButton>
+        </div>
       </div>
 
       {error ? (
@@ -307,8 +341,12 @@ export default function AdminBookingPage() {
           <div className="rounded-3xl bg-white p-8 text-sm text-stone-500 shadow-sm">
             No bookings yet.
           </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="rounded-3xl bg-white p-8 text-sm text-stone-500 shadow-sm">
+            No bookings match your search.
+          </div>
         ) : (
-          items.map((booking) => (
+          filteredItems.map((booking) => (
             <BookingCard
               key={booking.id}
               booking={booking}

@@ -31,10 +31,25 @@ export default function BookingCard({
   const canEditAssignments =
     booking.paymentStatus === "PAID" &&
     !["COMPLETED", "CANCELLED"].includes(booking.status);
+  function isAppointmentDateReached(appointmentDate) {
+    if (!appointmentDate) return false;
+    const today = new Date();
+    const todayOnly = new Date(
+      today.getDate(),
+      today.getMonth(),
+      today.getFullYear(),
+    );
+    const bookingDate = new Date(`${appointmentDate}"T00:00:00`);
+    return bookingDate <= todayOnly;
+  }
+  const isAppointmentDateReachedNow = isAppointmentDateReached(
+    booking.appointmentDate,
+  );
   const canToggleCheckIn =
     booking.paymentStatus === "PAID" &&
     booking.status === "CONFIRMED" &&
     booking.isFullyStaffed;
+  isAppointmentDateReachedNow;
   const readyForCompletion =
     booking.paymentStatus === "PAID" &&
     booking.status === "CONFIRMED" &&
@@ -96,7 +111,9 @@ export default function BookingCard({
                 setEditDraft={setEditDraft}
                 createDraftState={getNewDraft(item)}
                 setNewDraft={setNewDraft}
-                onAddAssignment={(detail) => onAddAssignment(booking.id, detail)}
+                onAddAssignment={(detail) =>
+                  onAddAssignment(booking.id, detail)
+                }
                 onUpdateAssignment={onUpdateAssignment}
                 onDeleteAssignment={onDeleteAssignment}
               />

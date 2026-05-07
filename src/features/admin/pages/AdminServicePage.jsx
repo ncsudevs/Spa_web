@@ -30,6 +30,7 @@ export default function ServicePage() {
     reload: reloadServices,
   } = useServices();
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -48,6 +49,25 @@ export default function ServicePage() {
   const displayError = error || loadError;
 
   const categoriesReady = categories.length > 0;
+
+  const filteredItems = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return items;
+
+    return items.filter((item) =>
+      [
+        item.name,
+        item.categoryName,
+        item.description,
+        item.status,
+        item.price,
+        item.duration,
+        item.slotCapacity,
+      ]
+        .filter((value) => value !== null && value !== undefined && value !== "")
+        .some((value) => String(value).toLowerCase().includes(keyword)),
+    );
+  }, [items, searchTerm]);
 
   // Summary cards help admins understand how many services are visible versus hidden.
   const summary = useMemo(
@@ -207,6 +227,12 @@ export default function ServicePage() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by service, category, status, or price"
+          className="min-w-[260px] flex-1 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-rose-300 md:max-w-sm"
+        />
         <AppButton onClick={openAdd} disabled={!categoriesReady}>
           <Plus size={16} /> Add service
         </AppButton>
@@ -251,6 +277,8 @@ export default function ServicePage() {
               </AppButton>
             }
           />
+        ) : filteredItems.length === 0 ? (
+          <div className="py-8 text-sm text-stone-500">No services match your search.</div>
         ) : (
           <TableScrollFrame scrollAreaClassName="overflow-x-auto">
             <table className="w-full min-w-[920px]">
@@ -261,12 +289,16 @@ export default function ServicePage() {
                       type="checkbox"
                       className="h-4 w-4"
                       checked={
-                        selectedIds.length > 0 &&
-                        selectedIds.length === items.length
+                        filteredItems.length > 0 &&
+                        filteredItems.every((item) => selectedIds.includes(item.id))
                       }
                       onChange={(e) =>
                         setSelectedIds(
-                          e.target.checked ? items.map((i) => i.id) : [],
+                          e.target.checked
+                            ? Array.from(new Set([...selectedIds, ...filteredItems.map((item) => item.id)]))
+                            : selectedIds.filter(
+                                (id) => !filteredItems.some((item) => item.id === id),
+                              ),
                         )
                       }
                     />
@@ -282,11 +314,11 @@ export default function ServicePage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, index) => (
+                {filteredItems.map((item, index) => (
                   <tr
                     key={item.id}
                     className={
-                      index !== items.length - 1
+                      index !== filteredItems.length - 1
                         ? "border-b border-stone-100"
                         : ""
                     }

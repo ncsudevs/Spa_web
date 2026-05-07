@@ -18,6 +18,7 @@ export default function StaffPage() {
   const { staff: items, loading, error: loadError, reload } = useStaff();
   const { categories } = useServiceCategories();
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -40,6 +41,24 @@ export default function StaffPage() {
     }),
     [items],
   );
+
+  const filteredItems = useMemo(() => {
+    const keyword = searchTerm.trim().toLowerCase();
+    if (!keyword) return items;
+
+    return items.filter((item) =>
+      [
+        item.fullName,
+        item.email,
+        item.phone,
+        item.isActive ? "ACTIVE" : "INACTIVE",
+        item.maxConcurrent,
+        ...(item.categoryNames || []),
+      ]
+        .filter((value) => value !== null && value !== undefined && value !== "")
+        .some((value) => String(value).toLowerCase().includes(keyword)),
+    );
+  }, [items, searchTerm]);
 
   function updateField(name, value) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -151,6 +170,12 @@ export default function StaffPage() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by staff name, email, phone, or category"
+          className="min-w-[260px] flex-1 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-rose-300 md:max-w-sm"
+        />
         <AppButton onClick={openCreate}>
           <Plus size={16} /> Add staff
         </AppButton>
@@ -195,6 +220,8 @@ export default function StaffPage() {
               </AppButton>
             }
           />
+        ) : filteredItems.length === 0 ? (
+          <div className="py-8 text-sm text-stone-500">No staff match your search.</div>
         ) : (
           <TableScrollFrame scrollAreaClassName="overflow-x-auto">
             <table className="w-full min-w-[860px]">
@@ -205,12 +232,16 @@ export default function StaffPage() {
                       type="checkbox"
                       className="h-4 w-4"
                       checked={
-                        selectedIds.length > 0 &&
-                        selectedIds.length === items.length
+                        filteredItems.length > 0 &&
+                        filteredItems.every((item) => selectedIds.includes(item.id))
                       }
                       onChange={(e) =>
                         setSelectedIds(
-                          e.target.checked ? items.map((i) => i.id) : [],
+                          e.target.checked
+                            ? Array.from(new Set([...selectedIds, ...filteredItems.map((item) => item.id)]))
+                            : selectedIds.filter(
+                                (id) => !filteredItems.some((item) => item.id === id),
+                              ),
                         )
                       }
                     />
@@ -224,11 +255,11 @@ export default function StaffPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, index) => (
+                {filteredItems.map((item, index) => (
                   <tr
                     key={item.id}
                     className={
-                      index !== items.length - 1 ? "border-b border-stone-100" : ""
+                      index !== filteredItems.length - 1 ? "border-b border-stone-100" : ""
                     }
                   >
                     <td className="p-4">
