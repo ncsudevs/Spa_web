@@ -14,6 +14,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { getBookings } from "../../bookings/api/bookingApi";
+import { getPayments } from "../../payments/api/paymentApi";
 import { useAuth } from "../../../context/useAuth";
 
 const menu = [
@@ -63,7 +64,10 @@ function SidebarContent({
   user,
   visibleMenu,
   staffingAlertCount,
+  paymentReviewCount,
 }) {
+  const totalAlertCount = staffingAlertCount + paymentReviewCount;
+
   return (
     <>
       <div className="mb-8 flex items-center justify-between gap-3 px-3">
@@ -81,9 +85,9 @@ function SidebarContent({
         <div className="flex items-center gap-2">
           <div className="relative rounded-full border border-stone-800 bg-stone-900/80 p-2 text-stone-300">
             <Bell className="h-4 w-4" />
-            {staffingAlertCount > 0 ? (
+            {totalAlertCount > 0 ? (
               <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-none text-white">
-                {staffingAlertCount > 9 ? "9+" : staffingAlertCount}
+                {totalAlertCount > 9 ? "9+" : totalAlertCount}
               </span>
             ) : null}
           </div>
@@ -100,12 +104,21 @@ function SidebarContent({
         </div>
       </div>
 
-      {staffingAlertCount > 0 ? (
+      {totalAlertCount > 0 ? (
         <div className="mb-5 rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-          <p className="font-medium">Staffing attention needed</p>
-          <p className="mt-1 text-xs leading-5 text-rose-100/80">
-            {staffingAlertCount} paid booking{staffingAlertCount > 1 ? "s are" : " is"} still missing enough staff.
-          </p>
+          <p className="font-medium">Operations attention needed</p>
+          <div className="mt-1 space-y-1 text-xs leading-5 text-rose-100/80">
+            {staffingAlertCount > 0 ? (
+              <p>
+                {staffingAlertCount} paid booking{staffingAlertCount > 1 ? "s are" : " is"} still missing enough staff.
+              </p>
+            ) : null}
+            {paymentReviewCount > 0 ? (
+              <p>
+                {paymentReviewCount} bank transfer payment{paymentReviewCount > 1 ? "s are" : " is"} waiting for cashier review.
+              </p>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -113,6 +126,7 @@ function SidebarContent({
         {visibleMenu.map((m) => {
           const Icon = m.icon;
           const isBookingLink = m.to === "/admin/bookings";
+          const isPaymentLink = m.to === "/admin/payments";
           return (
             <NavLink
               key={m.to}
@@ -131,6 +145,11 @@ function SidebarContent({
               {isBookingLink && staffingAlertCount > 0 ? (
                 <span className="rounded-full bg-rose-500/15 px-2 py-1 text-[11px] font-semibold text-rose-300">
                   {staffingAlertCount}
+                </span>
+              ) : null}
+              {isPaymentLink && paymentReviewCount > 0 ? (
+                <span className="rounded-full bg-amber-500/15 px-2 py-1 text-[11px] font-semibold text-amber-300">
+                  {paymentReviewCount}
                 </span>
               ) : null}
             </NavLink>
@@ -154,6 +173,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [staffingAlertCount, setStaffingAlertCount] = useState(0);
+  const [paymentReviewCount, setPaymentReviewCount] = useState(0);
   const visibleMenu = menu.filter((item) => item.roles.includes(user?.role));
   const canTrackStaffingAlerts = useMemo(
     () => ["ADMIN", "CASHIER"].includes(user?.role),
@@ -170,22 +190,30 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
 
     async function loadStaffingAlerts() {
       try {
-        const bookings = await getBookings();
+        const [bookings, payments] = await Promise.all([getBookings(), getPayments()]);
         if (ignore) return;
 
         // Alert only on active paid bookings because those are the ones that
         // should already be covered by internal staffing follow-up.
-        const count = (bookings || []).filter(
+        const staffingCount = (bookings || []).filter(
           (booking) =>
             booking.paymentStatus === "PAID" &&
             !booking.isFullyStaffed &&
             !["CANCELLED", "COMPLETED"].includes(booking.status),
         ).length;
 
-        setStaffingAlertCount(count);
+        const reviewCount = (payments || []).filter(
+          (payment) =>
+            payment.method === "BANK_TRANSFER" &&
+            payment.status === "PENDING",
+        ).length;
+
+        setStaffingAlertCount(staffingCount);
+        setPaymentReviewCount(reviewCount);
       } catch {
         if (!ignore) {
           setStaffingAlertCount(0);
+          setPaymentReviewCount(0);
         }
       }
     }
@@ -226,6 +254,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
           user={user}
           visibleMenu={visibleMenu}
           staffingAlertCount={displayedStaffingAlertCount}
+          paymentReviewCount={canTrackStaffingAlerts ? paymentReviewCount : 0}
         />
       </aside>
 
@@ -236,6 +265,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
           user={user}
           visibleMenu={visibleMenu}
           staffingAlertCount={displayedStaffingAlertCount}
+          paymentReviewCount={canTrackStaffingAlerts ? paymentReviewCount : 0}
         />
       </aside>
     </>
