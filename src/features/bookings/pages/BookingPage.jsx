@@ -8,9 +8,9 @@ import { useAuth } from "../../../context/useAuth";
 import useFormErrorAssist from "../../../shared/hooks/useFormErrorAssist";
 import { formatCurrency, formatDate } from "../../../shared/utils/formatters";
 import {
-  clearCart,
   clearSelectedBookingItems,
   getSelectedBookingItems,
+  removeBookedCartItems,
   readCart,
 } from "../../../shared/utils/customerStorage";
 
@@ -229,6 +229,76 @@ function mapBookingServerError(message) {
   }
 
   return null;
+}
+
+function extractServerSchedule(message) {
+  const text = String(message || "");
+  const match = text.match(/at\s+(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}\s+[AP]M)/i);
+  if (!match) return null;
+
+  return {
+    displayDate: match[1],
+    time: match[2].toUpperCase(),
+  };
+}
+
+function mapSchedulingServerError({
+  message,
+  bookingMode,
+  bookingUnits,
+  appointments,
+  groupSchedule,
+}) {
+  const normalized = String(message || "").toLowerCase();
+  const schedule = extractServerSchedule(message);
+  const looksLikeScheduleConflict =
+    normalized.includes("different slot") ||
+    normalized.includes("another booking at") ||
+    normalized.includes("available slots") ||
+    normalized.includes("slot");
+
+  if (!looksLikeScheduleConflict) return null;
+
+  if (bookingMode === "group") {
+    return {
+      mode: "group",
+      field: "section",
+      message,
+    };
+  }
+
+  if (schedule) {
+    const matchedUnit = bookingUnits.find((item) => {
+      const appointment = appointments[item.key];
+      return (
+        appointment?.displayDate === schedule.displayDate &&
+        appointment?.time?.toUpperCase() === schedule.time
+      );
+    });
+
+    if (matchedUnit) {
+      return {
+        mode: "personal",
+        key: matchedUnit.key,
+        field: "section",
+        message,
+      };
+    }
+  }
+
+  const firstScheduledUnit = bookingUnits.find((item) => {
+    const appointment = appointments[item.key];
+    return appointment?.date && appointment?.time;
+  });
+
+  if (!firstScheduledUnit) return null;
+
+  return {
+    mode: "personal",
+    key: firstScheduledUnit.key,
+    field: "section",
+    message,
+  };
 }
 
 export default function BookingPage() {
@@ -710,7 +780,8 @@ export default function BookingPage() {
       };
 
       const booking = await createBooking(payload);
-      clearCart();
+      const bookedServiceIds = selectedCart.map((item) => item.service.id);
+      removeBookedCartItems(bookedServiceIds);
       clearSelectedBookingItems();
       navigate("/my-bookings", {
         state: {
@@ -720,7 +791,15 @@ export default function BookingPage() {
       });
     } catch (err) {
       const message = err.message || "Cannot create booking.";
-      const serverIssue = mapBookingServerError(message);
+      const serverIssue =
+        mapBookingServerError(message) ||
+        mapSchedulingServerError({
+          message,
+          bookingMode,
+          bookingUnits,
+          appointments,
+          groupSchedule,
+        });
 
       if (serverIssue) {
         setValidationIssue(serverIssue);

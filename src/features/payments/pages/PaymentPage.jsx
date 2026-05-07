@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { createPayment } from "../api/paymentApi";
 import FormErrorAlert from "../../../shared/components/FormErrorAlert";
 import useFormErrorAssist from "../../../shared/hooks/useFormErrorAssist";
-import { clearCart } from "../../../shared/utils/customerStorage";
 import { formatCurrency, formatDate } from "../../../shared/utils/formatters";
 
 const methods = [
@@ -66,8 +65,6 @@ export default function PaymentPage() {
         bookingId: booking.id,
         method,
       });
-
-      clearCart();
 
       if (method === "MOMO") {
         const hostedUrl = payment.payUrl || payment.qrCodeUrl || payment.deepLink;

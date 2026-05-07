@@ -3,6 +3,7 @@ import {
   CreditCard,
   LogOut,
   Activity,
+  Bell,
   X,
   LayoutDashboard,
   Layers,
@@ -10,7 +11,9 @@ import {
   Users,
   UserRound,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { getBookings } from "../../bookings/api/bookingApi";
 import { useAuth } from "../../../context/useAuth";
 
 const menu = [
@@ -59,6 +62,7 @@ function SidebarContent({
   onLogout,
   user,
   visibleMenu,
+  staffingAlertCount,
 }) {
   return (
     <>
@@ -74,6 +78,15 @@ function SidebarContent({
             </p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <div className="relative rounded-full border border-stone-800 bg-stone-900/80 p-2 text-stone-300">
+            <Bell className="h-4 w-4" />
+            {staffingAlertCount > 0 ? (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-none text-white">
+                {staffingAlertCount > 9 ? "9+" : staffingAlertCount}
+              </span>
+            ) : null}
+          </div>
         {mobile ? (
           <button
             type="button"
@@ -84,11 +97,22 @@ function SidebarContent({
             <X className="h-4 w-4" />
           </button>
         ) : null}
+        </div>
       </div>
+
+      {staffingAlertCount > 0 ? (
+        <div className="mb-5 rounded-3xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+          <p className="font-medium">Staffing attention needed</p>
+          <p className="mt-1 text-xs leading-5 text-rose-100/80">
+            {staffingAlertCount} paid booking{staffingAlertCount > 1 ? "s are" : " is"} still missing enough staff.
+          </p>
+        </div>
+      ) : null}
 
       <nav className="space-y-2">
         {visibleMenu.map((m) => {
           const Icon = m.icon;
+          const isBookingLink = m.to === "/admin/bookings";
           return (
             <NavLink
               key={m.to}
@@ -103,7 +127,12 @@ function SidebarContent({
               }
             >
               <Icon className="h-4 w-4" />
-              {m.label}
+              <span className="flex-1">{m.label}</span>
+              {isBookingLink && staffingAlertCount > 0 ? (
+                <span className="rounded-full bg-rose-500/15 px-2 py-1 text-[11px] font-semibold text-rose-300">
+                  {staffingAlertCount}
+                </span>
+              ) : null}
             </NavLink>
           );
         })}
@@ -124,7 +153,52 @@ function SidebarContent({
 export default function Sidebar({ open = false, onClose = () => {} }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [staffingAlertCount, setStaffingAlertCount] = useState(0);
   const visibleMenu = menu.filter((item) => item.roles.includes(user?.role));
+  const canTrackStaffingAlerts = useMemo(
+    () => ["ADMIN", "CASHIER"].includes(user?.role),
+    [user?.role],
+  );
+
+  useEffect(() => {
+    if (!canTrackStaffingAlerts) {
+      setStaffingAlertCount(0);
+      return undefined;
+    }
+
+    let ignore = false;
+
+    async function loadStaffingAlerts() {
+      try {
+        const bookings = await getBookings();
+        if (ignore) return;
+
+        // Alert only on active paid bookings because those are the ones that
+        // should already be covered by internal staffing follow-up.
+        const count = (bookings || []).filter(
+          (booking) =>
+            booking.paymentStatus === "PAID" &&
+            !booking.isFullyStaffed &&
+            !["CANCELLED", "COMPLETED"].includes(booking.status),
+        ).length;
+
+        setStaffingAlertCount(count);
+      } catch {
+        if (!ignore) {
+          setStaffingAlertCount(0);
+        }
+      }
+    }
+
+    loadStaffingAlerts();
+    const timerId = window.setInterval(loadStaffingAlerts, 60000);
+
+    return () => {
+      ignore = true;
+      window.clearInterval(timerId);
+    };
+  }, [canTrackStaffingAlerts]);
+
   const handleLogout = () => {
     logout();
     navigate("/login");
@@ -151,6 +225,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
           onLogout={handleLogout}
           user={user}
           visibleMenu={visibleMenu}
+          staffingAlertCount={staffingAlertCount}
         />
       </aside>
 
@@ -160,6 +235,7 @@ export default function Sidebar({ open = false, onClose = () => {} }) {
           onLogout={handleLogout}
           user={user}
           visibleMenu={visibleMenu}
+          staffingAlertCount={staffingAlertCount}
         />
       </aside>
     </>

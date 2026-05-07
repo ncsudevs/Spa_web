@@ -42,6 +42,15 @@ export function removeCartItem(serviceId) {
   writeCart(readCart().filter((item) => item.service.id !== serviceId));
 }
 
+export function removeBookedCartItems(serviceIds) {
+  const ids = new Set((serviceIds || []).map(Number).filter(Boolean));
+  if (!ids.size) return;
+
+  writeCart(
+    readCart().filter((item) => !ids.has(Number(item.service.id))),
+  );
+}
+
 export function clearCart() {
   writeCart([]);
   clearSelectedBookingItems();

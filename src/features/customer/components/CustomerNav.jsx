@@ -1,5 +1,6 @@
 import {
   ArrowUpRight,
+  CircleAlert,
   LogOut,
   Menu,
   ShoppingBag,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { getBookings } from "../../bookings/api/bookingApi";
 import { useAuth } from "../../../context/useAuth";
 import { readCart } from "../../../shared/utils/customerStorage";
 
@@ -16,6 +18,7 @@ export default function CustomerNav() {
   const [cartCount, setCartCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isCartBouncing, setIsCartBouncing] = useState(false);
+  const [pendingPaymentCount, setPendingPaymentCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
@@ -33,6 +36,43 @@ export default function CustomerNav() {
 
     return items;
   }, [isCustomer]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isCustomer) {
+      setPendingPaymentCount(0);
+      return undefined;
+    }
+
+    let ignore = false;
+
+    async function syncBookingAttention() {
+      try {
+        const bookings = await getBookings();
+        if (ignore) return;
+
+        const count = (bookings || []).filter(
+          (booking) =>
+            booking.paymentStatus === "UNPAID" &&
+            !booking.latestPaymentId &&
+            booking.status !== "CANCELLED",
+        ).length;
+
+        setPendingPaymentCount(count);
+      } catch {
+        if (!ignore) {
+          setPendingPaymentCount(0);
+        }
+      }
+    }
+
+    syncBookingAttention();
+    const timerId = window.setInterval(syncBookingAttention, 60000);
+
+    return () => {
+      ignore = true;
+      window.clearInterval(timerId);
+    };
+  }, [isAuthenticated, isCustomer, location.pathname]);
 
   useEffect(() => {
     const syncCart = () => {
@@ -103,7 +143,14 @@ export default function CustomerNav() {
                         }`
                       }
                     >
-                      {item.label}
+                      <span className="inline-flex items-center gap-2">
+                        {item.label}
+                        {item.to === "/my-bookings" && pendingPaymentCount > 0 ? (
+                          <span className="inline-flex items-center justify-center rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-700">
+                            !
+                          </span>
+                        ) : null}
+                      </span>
                     </NavLink>
                   ))}
                 </div>
@@ -197,7 +244,12 @@ export default function CustomerNav() {
                     }`
                   }
                 >
-                  {item.label}
+                  <span className="inline-flex items-center gap-2">
+                    {item.label}
+                    {item.to === "/my-bookings" && pendingPaymentCount > 0 ? (
+                      <CircleAlert className="h-4 w-4 text-amber-600" />
+                    ) : null}
+                  </span>
                 </NavLink>
               ))}
             </div>

@@ -20,7 +20,6 @@ import ErrorState from "../../../shared/components/ErrorState";
 import SkeletonBlock from "../../../shared/components/SkeletonBlock";
 import StatusBadge from "../../../shared/components/StatusBadge";
 import { useAuth } from "../../../context/useAuth";
-import { clearCart } from "../../../shared/utils/customerStorage";
 import {
   getBookingStatusBadgeLabels,
   getBookingWorkflowLabel,
@@ -389,7 +388,6 @@ export default function MyBookingsPage() {
         method,
       });
 
-      clearCart();
       setLatestPayments((current) => ({ ...current, [booking.id]: payment }));
       setNotice({
         tone: "success",
